@@ -6,54 +6,90 @@ function getCtx(): AudioContext {
   return audioCtx
 }
 
+function connectSoftChain(ctx: AudioContext, t: number) {
+  const master = ctx.createGain()
+  master.gain.setValueAtTime(0.55, t)
+
+  const lowpass = ctx.createBiquadFilter()
+  lowpass.type = 'lowpass'
+  lowpass.frequency.setValueAtTime(2400, t)
+  lowpass.Q.setValueAtTime(0.6, t)
+
+  lowpass.connect(master)
+  master.connect(ctx.destination)
+  return lowpass
+}
+
+function playTone(
+  ctx: AudioContext,
+  dest: AudioNode,
+  t: number,
+  freq: number,
+  {
+    volume = 0.1,
+    attack = 0.04,
+    decay = 0.35,
+    type = 'sine' as OscillatorType,
+    detune = 0,
+  }: {
+    volume?: number
+    attack?: number
+    decay?: number
+    type?: OscillatorType
+    detune?: number
+  } = {},
+) {
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.type = type
+  osc.frequency.setValueAtTime(freq, t)
+  osc.detune.setValueAtTime(detune, t)
+  gain.gain.setValueAtTime(0.0001, t)
+  gain.gain.exponentialRampToValueAtTime(Math.max(volume, 0.0001), t + attack)
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay)
+  osc.connect(gain)
+  gain.connect(dest)
+  osc.start(t)
+  osc.stop(t + attack + decay + 0.05)
+}
+
+/** 질문 표시용 — 부드러운 차임 */
+function playSoftDing(ctx: AudioContext, t: number) {
+  const dest = connectSoftChain(ctx, t)
+
+  playTone(ctx, dest, t, 587.33, { volume: 0.09, attack: 0.06, decay: 0.55, detune: -4 })
+  playTone(ctx, dest, t + 0.03, 880, { volume: 0.045, attack: 0.08, decay: 0.45, detune: 2 })
+  playTone(ctx, dest, t + 0.07, 1174.66, { volume: 0.025, attack: 0.1, decay: 0.35, type: 'triangle' })
+}
+
+/** 카운트다운용 — 가벼운 틱 */
+function playSoftClick(ctx: AudioContext, t: number) {
+  const dest = connectSoftChain(ctx, t)
+
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.type = 'sine'
+  osc.frequency.setValueAtTime(640, t)
+  osc.frequency.exponentialRampToValueAtTime(480, t + 0.06)
+  gain.gain.setValueAtTime(0.0001, t)
+  gain.gain.exponentialRampToValueAtTime(0.07, t + 0.012)
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.1)
+  osc.connect(gain)
+  gain.connect(dest)
+  osc.start(t)
+  osc.stop(t + 0.12)
+
+  playTone(ctx, dest, t + 0.01, 1046.5, { volume: 0.018, attack: 0.008, decay: 0.06, type: 'triangle' })
+}
+
 export function playCue(type: 'ding' | 'click'): void {
   const ctx = getCtx()
-  const t = ctx.currentTime
+  const t = ctx.currentTime + 0.01
 
   if (type === 'ding') {
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.type = 'sine'
-    osc.frequency.setValueAtTime(880, t)
-    osc.frequency.exponentialRampToValueAtTime(660, t + 0.08)
-    gain.gain.setValueAtTime(0, t)
-    gain.gain.linearRampToValueAtTime(0.35, t + 0.02)
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45)
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.start(t)
-    osc.stop(t + 0.5)
-
-    const osc2 = ctx.createOscillator()
-    const gain2 = ctx.createGain()
-    osc2.type = 'sine'
-    osc2.frequency.setValueAtTime(1320, t + 0.06)
-    gain2.gain.setValueAtTime(0, t + 0.06)
-    gain2.gain.linearRampToValueAtTime(0.12, t + 0.1)
-    gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.35)
-    osc2.connect(gain2)
-    gain2.connect(ctx.destination)
-    osc2.start(t + 0.06)
-    osc2.stop(t + 0.4)
+    playSoftDing(ctx, t)
   } else {
-    const bufferSize = ctx.sampleRate * 0.03
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
-    const data = buffer.getChannelData(0)
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15))
-    }
-    const src = ctx.createBufferSource()
-    const gain = ctx.createGain()
-    const filter = ctx.createBiquadFilter()
-    filter.type = 'highpass'
-    filter.frequency.value = 1200
-    src.buffer = buffer
-    gain.gain.value = 0.5
-    src.connect(filter)
-    filter.connect(gain)
-    gain.connect(ctx.destination)
-    src.start(t)
-    src.stop(t + 0.05)
+    playSoftClick(ctx, t)
   }
 }
 
