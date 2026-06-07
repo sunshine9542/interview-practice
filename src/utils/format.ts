@@ -15,11 +15,14 @@ export function formatDate(ts: number): string {
   }).format(new Date(ts))
 }
 
+/** 녹화 시작 후 질문만 보여주는 시간 (카운트다운 전) — 5~9초 */
 export function flashDurationForQuestion(
-  _text: string,
+  text: string,
   baseSeconds: number,
 ): number {
-  return Math.min(3, Math.max(2, baseSeconds))
+  const base = Math.max(5, Math.min(7, baseSeconds))
+  const extra = Math.min(2, Math.floor(text.length / 50))
+  return Math.max(5, Math.min(9, base + extra))
 }
 
 /** 녹화 중 다음 질문 배너 — 초기 플래시보다 더 길게 표시 */

@@ -146,7 +146,10 @@ export function SettingsPage({ settings, modes, onChange, onRemoveFeedbackItem }
       </section>
 
       <section style={{ marginBottom: 28 }}>
-        <h2 className="label-sm">답변 시작</h2>
+        <h2 className="label-sm">녹화 시작 흐름</h2>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
+          질문 표시(5~9초) → 카운트다운 → 자동 녹화 시작
+        </p>
         <div style={{ display: 'flex', gap: 10 }}>
           <button
             type="button"
@@ -198,12 +201,12 @@ export function SettingsPage({ settings, modes, onChange, onRemoveFeedbackItem }
       </section>
 
       <section style={{ marginBottom: 28 }}>
-        <h2 className="label-sm">질문 표시 시간 ({settings.questionFlashSeconds}초)</h2>
+        <h2 className="label-sm">질문 표시 시간 (5~9초 · 기본 {settings.questionFlashSeconds}초)</h2>
         <input
           type="range"
-          min={3}
-          max={8}
-          value={settings.questionFlashSeconds}
+          min={5}
+          max={9}
+          value={Math.max(5, Math.min(9, settings.questionFlashSeconds))}
           onChange={(e) => patch({ questionFlashSeconds: Number(e.target.value) })}
           style={{ width: '100%', accentColor: 'var(--accent)' }}
         />

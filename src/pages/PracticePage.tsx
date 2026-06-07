@@ -4,7 +4,7 @@ import { Icon } from '../components/Icon'
 import { flashDurationForQuestion, formatDuration, nextQuestionBannerDuration } from '../utils/format'
 import type { AppSettings, PracticeContext, RecordKind, ReminderKind } from '../types'
 
-type Phase = 'preview' | 'flash' | 'countdown' | 'ready' | 'recording'
+type Phase = 'preview' | 'flash' | 'countdown' | 'recording'
 
 interface ReminderToast {
   label: string
@@ -287,23 +287,13 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
     unlockAudio()
     playCue(settings.soundType)
 
-    if (settings.startMode === 'manual') {
-      setPhase('ready')
-      return
-    }
-
     setPhase('flash')
-    const flashMs = flashDurationForQuestion(currentQuestion, settings.questionFlashSeconds) * 1000
-    await delay(flashMs)
+    const holdMs = flashDurationForQuestion(currentQuestion, settings.questionFlashSeconds) * 1000
+    await delay(holdMs)
 
     await runCountdown()
     startRecording()
   }, [settings, currentQuestion, runCountdown, startRecording])
-
-  const handleStartAnswer = useCallback(async () => {
-    await runCountdown()
-    startRecording()
-  }, [runCountdown, startRecording])
 
   useEffect(() => {
     return () => {
@@ -419,24 +409,6 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
           </div>
         )}
 
-        {recordKind === 'video' && phase === 'ready' && (
-          <div className="flash-overlay flash-overlay--media flash-overlay--phase">
-            <QuestionDisplay
-              question={currentQuestion}
-              questionIndex={questionIndex}
-              totalQuestions={totalQuestions}
-              stable
-            />
-            <button
-              type="button"
-              className="btn btn-primary phase-start-btn"
-              onClick={() => void handleStartAnswer()}
-            >
-              답변 시작
-            </button>
-          </div>
-        )}
-
         {recordKind === 'video' && phase === 'preview' && (
           <div
             style={{
@@ -482,7 +454,7 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
         </div>
       )}
 
-      {recordKind === 'audio' && (phase === 'flash' || phase === 'ready' || phase === 'countdown') && (
+      {recordKind === 'audio' && (phase === 'flash' || phase === 'countdown') && (
         <div className="audio-phase-panel">
           <QuestionDisplay
             question={currentQuestion}
@@ -492,15 +464,6 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
           />
           {phase === 'countdown' && (
             <CountdownRing countdown={countdown} total={settings.countdownSeconds} />
-          )}
-          {phase === 'ready' && (
-            <button
-              type="button"
-              className="btn btn-primary phase-start-btn"
-              onClick={() => void handleStartAnswer()}
-            >
-              답변 시작
-            </button>
           )}
         </div>
       )}
