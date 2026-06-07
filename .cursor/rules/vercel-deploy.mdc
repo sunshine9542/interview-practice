@@ -1,0 +1,14 @@
+---
+description: 작업 완료 후 Git 커밋·푸시로 Vercel 자동 배포
+alwaysApply: true
+---
+
+# Vercel 자동 배포
+
+코드 변경 작업을 마친 뒤, 사용자가 별도로 말하지 않아도 다음을 수행한다.
+
+1. `git status` / `git diff`로 변경 내용 확인
+2. 의미 있는 한국어 커밋 메시지로 커밋 (비밀·자격증명 파일 제외)
+3. `git push origin main`으로 GitHub에 푸시 (Vercel 자동 배포)
+
+사용자가 "커밋하지 마" 등으로 명시적으로 거부한 경우에만 생략한다.
