@@ -1,5 +1,8 @@
+import { useRef, useState } from 'react'
+import { LandscapePcHint } from '../components/LandscapePcHint'
 import { TimeLimitFields } from '../components/TimeLimitFields'
 import { playCue, unlockAudio } from '../utils/sound'
+import { isMobileViewport } from '../utils/layout'
 import type { AppSettings, LayoutMode, QuickStartConfig, SoundType, StartMode, ThemeMode } from '../types'
 
 interface Props {
@@ -8,9 +11,22 @@ interface Props {
 }
 
 export function SettingsPage({ settings, onChange }: Props) {
+  const [showLandscapeHint, setShowLandscapeHint] = useState(false)
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const patch = (partial: Partial<AppSettings>) => onChange({ ...settings, ...partial })
   const patchQS = (partial: Partial<QuickStartConfig>) =>
     patch({ quickStart: { ...settings.quickStart, ...partial } })
+
+  function selectLayout(mode: LayoutMode) {
+    if (mode === 'landscape' && isMobileViewport()) {
+      setShowLandscapeHint(true)
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
+      hintTimerRef.current = setTimeout(() => setShowLandscapeHint(false), 4000)
+      return
+    }
+    patch({ layoutMode: mode })
+  }
 
   return (
     <>
@@ -49,7 +65,7 @@ export function SettingsPage({ settings, onChange }: Props) {
             type="button"
             className={`chip ${settings.layoutMode === 'portrait' ? 'active' : ''}`}
             style={{ flex: 1, justifyContent: 'center' }}
-            onClick={() => patch({ layoutMode: 'portrait' as LayoutMode })}
+            onClick={() => selectLayout('portrait')}
           >
             세로 (모바일)
           </button>
@@ -57,7 +73,7 @@ export function SettingsPage({ settings, onChange }: Props) {
             type="button"
             className={`chip ${settings.layoutMode === 'landscape' ? 'active' : ''}`}
             style={{ flex: 1, justifyContent: 'center' }}
-            onClick={() => patch({ layoutMode: 'landscape' as LayoutMode })}
+            onClick={() => selectLayout('landscape')}
           >
             가로 (PC)
           </button>
@@ -224,6 +240,8 @@ export function SettingsPage({ settings, onChange }: Props) {
       <div className="glass-card" style={{ padding: 16, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
         모든 녹화·총평은 기기에만 저장됩니다. 서버로 전송하지 않습니다.
       </div>
+
+      <LandscapePcHint visible={showLandscapeHint} onClose={() => setShowLandscapeHint(false)} />
     </>
   )
 }

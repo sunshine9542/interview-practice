@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { LandscapePcHint } from '../components/LandscapePcHint'
 import { formatDate, formatDuration } from '../utils/format'
+import { isMobileViewport } from '../utils/layout'
 import type { LayoutMode, PracticeSession } from '../types'
 import type { ModeInfo } from '../data/modes'
 import { Icon } from '../components/Icon'
@@ -28,6 +30,25 @@ export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMod
 
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null)
   const [showInstallHelp, setShowInstallHelp] = useState(false)
+  const [showAllModes, setShowAllModes] = useState(false)
+  const [showLandscapeHint, setShowLandscapeHint] = useState(false)
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function handleLayoutToggle() {
+    if (isMobileViewport() && layoutMode === 'portrait') {
+      setShowLandscapeHint(true)
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
+      hintTimerRef.current = setTimeout(() => setShowLandscapeHint(false), 4000)
+      return
+    }
+    onToggleLayout()
+  }
+
+  useEffect(() => {
+    return () => {
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -71,7 +92,7 @@ export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMod
           <button
             type="button"
             className="chip"
-            onClick={onToggleLayout}
+            onClick={handleLayoutToggle}
             aria-label="화면 모드 전환"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', flexShrink: 0 }}
           >
@@ -173,29 +194,32 @@ export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMod
           </ul>
         </section>
       ) : (
-        <section style={{ marginTop: 36, textAlign: 'center' }}>
+        <section style={{ marginTop: 24 }}>
           <div
             className="glass-card"
             style={{
-              padding: '32px 20px',
+              padding: '14px 16px',
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
-              gap: 10,
+              gap: 12,
             }}
           >
-            <Icon name="practice" size={40} className="text-muted" />
-            <p style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>
-              아직 연습 기록이 없어요
-            </p>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              위의 버튼을 눌러 첫 연습을 시작해 보세요.
-            </p>
+            <span className="option-icon" style={{ width: 38, height: 38, flexShrink: 0 }}>
+              <Icon name="practice" size={20} />
+            </span>
+            <span style={{ lineHeight: 1.4 }}>
+              <span style={{ display: 'block', fontSize: '0.92rem', fontWeight: 700 }}>
+                아직 연습 기록이 없어요
+              </span>
+              <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                위 버튼으로 첫 연습을 시작해 보세요.
+              </span>
+            </span>
           </div>
 
-          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, textAlign: 'left' }}>
+          <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <h2 className="label-sm">이런 연습을 할 수 있어요</h2>
-            {modes.slice(0, 5).map((m) => (
+            {(showAllModes ? modes : modes.slice(0, 2)).map((m) => (
               <div
                 key={m.id}
                 className="glass-card"
@@ -210,6 +234,17 @@ export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMod
                 </span>
               </div>
             ))}
+            {modes.length > 2 && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setShowAllModes((v) => !v)}
+                style={{ alignSelf: 'center', fontSize: '0.84rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+              >
+                {showAllModes ? '접기' : `더보기 (${modes.length - 2})`}
+                <Icon name={showAllModes ? 'chevronLeft' : 'arrowRight'} size={14} />
+              </button>
+            )}
           </div>
         </section>
       )}
@@ -238,6 +273,8 @@ export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMod
       )}
 
       {showInstallHelp && <InstallHelp onClose={() => setShowInstallHelp(false)} />}
+
+      <LandscapePcHint visible={showLandscapeHint} onClose={() => setShowLandscapeHint(false)} />
     </>
   )
 }
@@ -255,12 +292,12 @@ function InstallHelp({ onClose }: { onClose: () => void }) {
       ]
     : isAndroid
       ? [
-          '브라우저 오른쪽 위 ⋮ 메뉴를 누르세요.',
+          '브라우저 오른쪽 위나 아래의 ⋮ 메뉴를 누르세요.',
           '"홈 화면에 추가"를 선택하세요.',
           '안내에 따라 추가하면 바로가기가 생깁니다.',
         ]
       : [
-          '브라우저 메뉴 → "바로가기 만들기"를 선택하면 바탕화면에 추가돼요.',
+          '브라우저 오른쪽 위나 아래의 메뉴에서 "바로가기 만들기"를 선택하면 바탕화면에 추가돼요.',
           '또는 주소창의 별(☆) 아이콘으로 즐겨찾기에 추가하세요.',
           '추가된 바로가기로 바로 접속할 수 있어요.',
         ]
