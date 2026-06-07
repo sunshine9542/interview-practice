@@ -336,7 +336,7 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
                 ? '16/9'
                 : '3/4'
               : 'auto',
-          minHeight: recordKind === 'audio' ? 200 : undefined,
+          minHeight: recordKind === 'audio' ? 220 : undefined,
           background: 'var(--media-bg)',
           border: '1px solid var(--border)',
         }}
@@ -361,7 +361,7 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
           </div>
         )}
 
-        {phase === 'preview' && (
+        {recordKind === 'video' && phase === 'preview' && (
           <div
             style={{
               position: 'absolute',
@@ -374,26 +374,30 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
               background: 'var(--preview-gradient)',
             }}
           >
-            {totalQuestions > 1 && (
-              <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 600 }}>
-                연속 {totalQuestions}문항 · 시간 종료 시 다음 질문
-              </p>
-            )}
-            <p style={{ margin: '0 0 16px', fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-              준비되면 {recordKind === 'video' ? '녹화' : '녹음'}를 시작하세요.
-              {limitEnabled && ` 질문당 ${formatDuration(limitSec)}.`}
-            </p>
-            <button
-              type="button"
-              className="btn btn-primary btn-block"
-              disabled={!mediaReady}
-              onClick={() => void runSequence()}
-            >
-              {recordKind === 'video' ? '녹화' : '녹음'} 시작
-            </button>
+            <PreviewStartPanel
+              recordKind={recordKind}
+              totalQuestions={totalQuestions}
+              limitEnabled={limitEnabled}
+              limitSec={limitSec}
+              mediaReady={mediaReady}
+              onStart={() => void runSequence()}
+            />
           </div>
         )}
       </div>
+
+      {recordKind === 'audio' && phase === 'preview' && (
+        <div style={{ marginTop: 16 }}>
+          <PreviewStartPanel
+            recordKind={recordKind}
+            totalQuestions={totalQuestions}
+            limitEnabled={limitEnabled}
+            limitSec={limitSec}
+            mediaReady={mediaReady}
+            onStart={() => void runSequence()}
+          />
+        </div>
+      )}
 
       {phase === 'recording' && limitEnabled && (
         <div className="question-progress">
@@ -606,6 +610,40 @@ function PermissionGate({
   )
 }
 
+function PreviewStartPanel({
+  recordKind,
+  totalQuestions,
+  limitEnabled,
+  limitSec,
+  mediaReady,
+  onStart,
+}: {
+  recordKind: RecordKind
+  totalQuestions: number
+  limitEnabled: boolean
+  limitSec: number
+  mediaReady: boolean
+  onStart: () => void
+}) {
+  const action = recordKind === 'video' ? '녹화' : '녹음'
+  return (
+    <>
+      {totalQuestions > 1 && (
+        <p style={{ margin: '0 0 10px', fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 600, textAlign: 'center' }}>
+          연속 {totalQuestions}문항 · 시간 종료 시 다음 질문
+        </p>
+      )}
+      <p style={{ margin: '0 0 16px', fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
+        준비되면 {action}를 시작하세요.
+        {limitEnabled && ` 질문당 ${formatDuration(limitSec)}.`}
+      </p>
+      <button type="button" className="btn btn-primary btn-block" disabled={!mediaReady} onClick={onStart}>
+        {action} 시작
+      </button>
+    </>
+  )
+}
+
 function AudioVisualizer({ stream, active }: { stream: MediaStream | null; active: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
@@ -654,7 +692,7 @@ function AudioVisualizer({ stream, active }: { stream: MediaStream | null; activ
   }, [stream, active])
 
   return (
-    <div style={{ padding: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+    <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
       <span className="option-icon" style={{ width: 56, height: 56, borderRadius: 16 }}>
         <Icon name="mic" size={28} />
       </span>
