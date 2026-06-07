@@ -43,7 +43,8 @@ function normalizeSession(raw: PracticeSession): PracticeSession {
 }
 
 export default function App() {
-  const { view, navigate, resetTo, popPracticeForReview, goBack } = useAppHistory('home')
+  const { view, setupStep, navigate, pushSetupStep, resetTo, popPracticeForReview, goBack } =
+    useAppHistory('home')
   const [settings, setSettings] = useState<AppSettings>(loadSettings)
   const [sessions, setSessions] = useState<PracticeSession[]>([])
   const [practiceContext, setPracticeContext] = useState<PracticeContext | null>(null)
@@ -313,7 +314,9 @@ export default function App() {
         <SetupPage
           settings={settings}
           modes={modes}
+          stepIndex={setupStep}
           onBack={goBack}
+          onStepChange={pushSetupStep}
           onStart={(ctx) => {
             setPracticeContext(ctx)
             navigate('practice')

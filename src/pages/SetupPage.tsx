@@ -20,14 +20,26 @@ const MAX_CUSTOM_QUESTIONS = 20
 interface Props {
   settings: AppSettings
   modes: ModeInfo[]
+  stepIndex: number
   onBack: () => void
+  onStepChange: (step: number) => void
   onStart: (ctx: PracticeContext) => void
   onQuickStart: (modeId: PracticeModeId) => void
   onAddMode: (mode: CustomMode) => void
   onDeleteMode: (id: string) => void
 }
 
-export function SetupPage({ settings, modes, onBack, onStart, onQuickStart, onAddMode, onDeleteMode }: Props) {
+export function SetupPage({
+  settings,
+  modes,
+  stepIndex,
+  onBack,
+  onStepChange,
+  onStart,
+  onQuickStart,
+  onAddMode,
+  onDeleteMode,
+}: Props) {
   const [modeId, setModeId] = useState<PracticeModeId | null>(null)
   const [careerFlow, setCareerFlow] = useState<CareerFlow>('single')
   const [questions, setQuestions] = useState<string[]>([])
@@ -36,7 +48,6 @@ export function SetupPage({ settings, modes, onBack, onStart, onQuickStart, onAd
     ...settings.defaultTimeLimit,
     reminders: { ...settings.defaultTimeLimit.reminders },
   })
-  const [stepIndex, setStepIndex] = useState(0)
   const [hideQuestions, setHideQuestions] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newLabel, setNewLabel] = useState('')
@@ -77,7 +88,7 @@ export function SetupPage({ settings, modes, onBack, onStart, onQuickStart, onAd
   }
 
   function handleModeNext() {
-    if (modeId) setStepIndex(1)
+    if (modeId) onStepChange(1)
   }
 
   function buildQuickDesc(): string {
@@ -106,15 +117,11 @@ export function SetupPage({ settings, modes, onBack, onStart, onQuickStart, onAd
   const canStart = !multiMode || timeLimit.enabled
 
   function goNext() {
-    setStepIndex((i) => Math.min(i + 1, steps.length - 1))
+    onStepChange(Math.min(stepIndex + 1, steps.length - 1))
   }
 
   function goPrev() {
-    if (stepIndex <= 0) {
-      onBack()
-    } else {
-      setStepIndex((i) => i - 1)
-    }
+    onBack()
   }
 
   const selectedMode = modes.find((m) => m.id === modeId)
