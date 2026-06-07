@@ -65,8 +65,20 @@ export function ReviewPage({ session, isNew, onSave, onDelete, onDone }: Props) 
     })
   }
 
+  const finish = () => {
+    const updated = {
+      ...session,
+      questionnaireAnswers: answers,
+      memos,
+      summary,
+    }
+    handleSave()
+    onDone(updated)
+  }
+
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: '12px 20px 32px' }}>
+    <div className="review-page">
+      <div className="review-page__body">
       <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
         <button
           type="button"
@@ -122,7 +134,7 @@ export function ReviewPage({ session, isNew, onSave, onDelete, onDone }: Props) 
         )}
         {session.timeLimitEnabled && session.questionLimitSeconds && (
           <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            질문당 {Math.floor(session.questionLimitSeconds / 60)}분 제한
+            질문당 {formatDuration(session.questionLimitSeconds)} 제한
             {session.questions.length > 1 ? ` · ${session.questions.length}문항 연속` : ''}
           </p>
         )}
@@ -251,23 +263,13 @@ export function ReviewPage({ session, isNew, onSave, onDelete, onDone }: Props) 
         </div>
       </section>
 
-      <button
-        type="button"
-        className="btn btn-primary btn-block"
-        style={{ marginTop: 28 }}
-        onClick={() => {
-          const updated = {
-            ...session,
-            questionnaireAnswers: answers,
-            memos,
-            summary,
-          }
-          handleSave()
-          onDone(updated)
-        }}
-      >
-        {isNew ? '저장하고 완료' : '저장'}
-      </button>
+      </div>
+
+      <footer className="review-page__footer">
+        <button type="button" className="btn btn-primary btn-block" onClick={finish}>
+          {isNew ? '저장하고 완료' : '저장'}
+        </button>
+      </footer>
     </div>
   )
 }

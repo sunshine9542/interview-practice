@@ -30,6 +30,10 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
   const questionStartRef = useRef<number>(0)
   const firedRef = useRef<Set<ReminderKind | 'end'>>(new Set())
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const questionIndexRef = useRef(0)
+  const totalQuestionsRef = useRef(questions.length)
+  const autoNextQuestionRef = useRef(autoNextQuestion)
+  const checkTimeRemindersRef = useRef<(qElapsed: number) => void>(() => {})
 
   const [phase, setPhase] = useState<Phase>('preview')
   const [questionIndex, setQuestionIndex] = useState(0)
@@ -62,26 +66,42 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
     setTimeout(() => setQuestionBanner(null), flashDurationForQuestion(text, settings.questionFlashSeconds) * 1000)
   }, [settings.soundType, settings.questionFlashSeconds])
 
+  useEffect(() => {
+    questionIndexRef.current = questionIndex
+  }, [questionIndex])
+
+  useEffect(() => {
+    totalQuestionsRef.current = questions.length
+  }, [questions.length])
+
+  useEffect(() => {
+    autoNextQuestionRef.current = autoNextQuestion
+  }, [autoNextQuestion])
+
   const advanceQuestion = useCallback(() => {
-    const next = questionIndex + 1
-    if (next >= totalQuestions) return false
+    const next = questionIndexRef.current + 1
+    if (next >= totalQuestionsRef.current) return false
+    questionIndexRef.current = next
     setQuestionIndex(next)
     questionStartRef.current = Date.now()
     setQuestionElapsed(0)
     firedRef.current.clear()
     showNextQuestionBanner(questions[next])
     return true
-  }, [questionIndex, totalQuestions, questions, showNextQuestionBanner])
+  }, [questions, showNextQuestionBanner])
 
   const handleQuestionTimeEnd = useCallback(() => {
-    if (autoNextQuestion && questionIndex < totalQuestions - 1) {
-      advanceQuestion()
-      showToast({
-        label: '다음 질문',
-        message: '다음 질문이 표시됩니다. 계속 답변해 주세요.',
-        timeLabel: formatDuration(limitSec),
-      })
-    } else if (totalQuestions > 1 && questionIndex >= totalQuestions - 1) {
+    const idx = questionIndexRef.current
+    const total = totalQuestionsRef.current
+    if (autoNextQuestionRef.current && idx < total - 1) {
+      if (advanceQuestion()) {
+        showToast({
+          label: '다음 질문',
+          message: '다음 질문이 표시됩니다. 계속 답변해 주세요.',
+          timeLabel: formatDuration(limitSec),
+        })
+      }
+    } else if (total > 1 && idx >= total - 1) {
       showToast({
         label: '시간 종료',
         message: '모든 질문 시간이 끝났습니다. 마무리 후 녹화 종료를 눌러 주세요.',
@@ -96,14 +116,7 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
       })
       playCue('ding')
     }
-  }, [
-    autoNextQuestion,
-    questionIndex,
-    totalQuestions,
-    advanceQuestion,
-    showToast,
-    limitSec,
-  ])
+  }, [advanceQuestion, showToast, limitSec])
 
   const checkTimeReminders = useCallback(
     (qElapsed: number) => {
@@ -143,6 +156,8 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
     },
     [limitEnabled, timeLimit, limitSec, showToast, handleQuestionTimeEnd],
   )
+
+  checkTimeRemindersRef.current = checkTimeReminders
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop())
@@ -239,23 +254,16 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
       const qEl = Math.floor((Date.now() - questionStartRef.current) / 1000)
       setElapsed(total)
       setQuestionElapsed(qEl)
-      checkTimeReminders(qEl)
+      checkTimeRemindersRef.current(qEl)
     }, 250)
-  }, [recordKind, onComplete, stopStream, checkTimeReminders])
+  }, [recordKind, onComplete, stopStream])
 
   const stopRecording = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
     recorderRef.current?.stop()
   }, [])
 
-  const runSequence = useCallback(async () => {
-    unlockAudio()
-    setPhase('flash')
-    playCue(settings.soundType)
-
-    const flashMs = flashDurationForQuestion(currentQuestion, settings.questionFlashSeconds) * 1000
-    await delay(flashMs)
-
+  const runCountdown = useCallback(async () => {
     setPhase('countdown')
     let left = settings.countdownSeconds
     setCountdown(left)
@@ -269,13 +277,29 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
         playCue('click')
       }
     }
+  }, [settings.countdownSeconds])
 
-    if (settings.startMode === 'auto') {
-      startRecording()
-    } else {
+  const runSequence = useCallback(async () => {
+    unlockAudio()
+    setPhase('flash')
+    playCue(settings.soundType)
+
+    const flashMs = flashDurationForQuestion(currentQuestion, settings.questionFlashSeconds) * 1000
+    await delay(flashMs)
+
+    if (settings.startMode === 'manual') {
       setPhase('ready')
+      return
     }
-  }, [settings, currentQuestion, startRecording])
+
+    await runCountdown()
+    startRecording()
+  }, [settings, currentQuestion, runCountdown, startRecording])
+
+  const handleStartAnswer = useCallback(async () => {
+    await runCountdown()
+    startRecording()
+  }, [runCountdown, startRecording])
 
   useEffect(() => {
     return () => {
@@ -471,7 +495,7 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
             type="button"
             className="btn btn-primary"
             style={{ padding: '18px 48px', fontSize: '1.1rem' }}
-            onClick={startRecording}
+            onClick={() => void handleStartAnswer()}
           >
             답변 시작
           </button>

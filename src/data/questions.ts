@@ -60,11 +60,12 @@ export function pickRandomQuestion(modeId: PracticeModeId): string {
 }
 
 export function pickMultipleQuestions(modeId: PracticeModeId, count: number): string[] {
-  const pool = [...getPool(modeId)]
-  if (pool.length === 0) return ['질문이 없습니다.']
+  const source = getPool(modeId)
+  if (source.length === 0) return ['질문이 없습니다.']
   const result: string[] = []
-  const n = Math.min(count, pool.length)
-  for (let i = 0; i < n; i++) {
+  let pool = [...source]
+  for (let i = 0; i < count; i++) {
+    if (pool.length === 0) pool = [...source]
     const idx = Math.floor(Math.random() * pool.length)
     result.push(pool.splice(idx, 1)[0])
   }

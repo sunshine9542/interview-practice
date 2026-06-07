@@ -698,6 +698,34 @@ input[type='range']:disabled::-webkit-slider-thumb {
   background: var(--accent);
 }
 
+.review-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.review-page__body {
+  flex: 1;
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 12px 20px calc(88px + var(--safe-bottom));
+}
+
+.review-page__footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 12px 20px calc(12px + var(--safe-bottom));
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

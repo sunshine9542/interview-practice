@@ -76,7 +76,7 @@ export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMod
 
   return (
     <>
-      <header style={{ marginBottom: 24 }}>
+      <header style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <p
             style={{
@@ -108,7 +108,7 @@ export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMod
         </p>
       </header>
 
-      <button type="button" className="btn btn-primary btn-block" onClick={onStart} style={{ padding: '17px' }}>
+      <button type="button" className="btn btn-primary btn-block" onClick={onStart} style={{ padding: '15px' }}>
         새 연습 시작
         <Icon name="arrowRight" size={18} />
       </button>
@@ -141,13 +141,27 @@ export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMod
         </button>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
-        <StatMini label="총 연습" value={String(sessions.length)} />
-        <StatMini label="이번 주" value={String(weekCount)} />
+      <div
+        className="glass-card"
+        style={{
+          marginTop: 12,
+          padding: '9px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 14,
+        }}
+      >
+        <StatInline label="총 연습" value={sessions.length} />
+        <span
+          aria-hidden
+          style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0, opacity: 0.7 }}
+        />
+        <StatInline label="이번 주" value={weekCount} />
       </div>
 
       {recent.length > 0 ? (
-        <section style={{ marginTop: 30 }}>
+        <section style={{ marginTop: 18 }}>
           <h2 className="label-sm">최근 기록</h2>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {recent.map((s) => {
@@ -352,11 +366,21 @@ function InstallHelp({ onClose }: { onClose: () => void }) {
   )
 }
 
-function StatMini({ label, value }: { label: string; value: string }) {
+function StatInline({ label, value }: { label: string; value: number }) {
   return (
-    <div className="glass-card" style={{ padding: '16px 18px' }}>
-      <div style={{ fontSize: '1.7rem', fontWeight: 700, letterSpacing: '-0.02em' }}>{value}</div>
-      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{label}</div>
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, minWidth: 0 }}>
+      <span
+        style={{
+          fontSize: '1.05rem',
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
+          fontVariantNumeric: 'tabular-nums',
+          color: 'var(--text)',
+        }}
+      >
+        {value}
+      </span>
+      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>{label}</span>
     </div>
   )
 }

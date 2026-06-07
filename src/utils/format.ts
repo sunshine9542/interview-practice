@@ -1,7 +1,9 @@
 export function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
+  const sec = Math.max(0, Math.floor(seconds))
+  if (sec < 60) return `${sec}초`
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return s === 0 ? `${m}분` : `${m}:${s.toString().padStart(2, '0')}`
 }
 
 export function formatDate(ts: number): string {
