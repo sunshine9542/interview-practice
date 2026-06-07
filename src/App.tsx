@@ -167,11 +167,10 @@ export default function App() {
 
   const handleQuickStart = (modeId: PracticeModeId) => {
     const qs = settings.quickStart
-    const isCareer = modeId === 'career'
-    const count = isCareer ? qs.questionCount : 1
+    const count = qs.questionCount
     const questions =
       count > 1 ? pickMultipleQuestions(modeId, count) : [pickRandomQuestion(modeId)]
-    const multiMode = isCareer && count > 1
+    const multiMode = count > 1
     const ctx: PracticeContext = {
       modeId,
       recordKind: qs.recordKind,
@@ -186,7 +185,6 @@ export default function App() {
   const handleContinue = () => {
     const last = sessions[0]
     if (!last) return
-    const isCareer = last.modeId === 'career'
     const count = last.questions.length
     const tl =
       last.timeLimitEnabled && last.questionLimitSeconds
@@ -198,7 +196,7 @@ export default function App() {
         : { ...settings.defaultTimeLimit, enabled: false }
     const questions =
       count > 1 ? pickMultipleQuestions(last.modeId, count) : [pickRandomQuestion(last.modeId)]
-    const multiMode = isCareer && count > 1
+    const multiMode = count > 1
     const ctx: PracticeContext = {
       modeId: last.modeId,
       recordKind: last.recordKind,

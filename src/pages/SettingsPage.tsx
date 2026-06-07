@@ -92,7 +92,7 @@ export function SettingsPage({ settings, modes, onChange, onRemoveFeedbackItem }
           면접 종류를 선택한 뒤 빠른 시작을 누르면 아래 설정으로 바로 연습에 들어갑니다.
         </p>
 
-        <label className="label-sm">질문 수 (커리어 모드)</label>
+        <label className="label-sm">질문 수</label>
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           {[1, 3, 5].map((n) => (
             <button

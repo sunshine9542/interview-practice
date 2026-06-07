@@ -12,8 +12,8 @@ import type {
   RecordKind,
   TimeLimitConfig,
 } from '../types'
-type CareerFlow = 'single' | 'triple' | 'quint'
-type StepKey = 'mode' | 'time' | 'record' | 'review'
+type QuestionFlow = 'single' | 'triple' | 'quint'
+type StepKey = 'mode' | 'time' | 'review' | 'record'
 
 const MAX_CUSTOM_QUESTIONS = 20
 
@@ -41,7 +41,7 @@ export function SetupPage({
   onDeleteMode,
 }: Props) {
   const [modeId, setModeId] = useState<PracticeModeId | null>(null)
-  const [careerFlow, setCareerFlow] = useState<CareerFlow>('single')
+  const [questionFlow, setQuestionFlow] = useState<QuestionFlow>('single')
   const [questions, setQuestions] = useState<string[]>([])
   const [recordKind, setRecordKind] = useState<RecordKind>(settings.defaultRecordKind)
   const [timeLimit, setTimeLimit] = useState<TimeLimitConfig>({
@@ -53,11 +53,10 @@ export function SetupPage({
   const [newLabel, setNewLabel] = useState('')
   const [newQuestionsText, setNewQuestionsText] = useState('')
 
-  const isCareer = modeId === 'career'
-  const questionCount = careerFlow === 'single' ? 1 : careerFlow === 'triple' ? 3 : 5
+  const questionCount = questionFlow === 'single' ? 1 : questionFlow === 'triple' ? 3 : 5
   const multiMode = questionCount > 1
 
-  const steps = useMemo<StepKey[]>(() => ['mode', 'time', 'record', 'review'], [])
+  const steps = useMemo<StepKey[]>(() => ['mode', 'time', 'review', 'record'], [])
 
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)]
 
@@ -67,7 +66,7 @@ export function SetupPage({
     }
   }, [multiMode, timeLimit.enabled])
 
-  function refreshQuestions(flow: CareerFlow, mode: PracticeModeId) {
+  function refreshQuestions(flow: QuestionFlow, mode: PracticeModeId) {
     const count = flow === 'single' ? 1 : flow === 'triple' ? 3 : 5
     if (count > 1) {
       setQuestions(pickMultipleQuestions(mode, count))
@@ -78,13 +77,7 @@ export function SetupPage({
 
   function handleModeSelect(id: PracticeModeId) {
     setModeId(id)
-    if (id !== 'career') {
-      setCareerFlow('single')
-      setQuestions([pickRandomQuestion(id)])
-    } else {
-      refreshQuestions('single', 'career')
-      setCareerFlow('single')
-    }
+    refreshQuestions(questionFlow, id)
   }
 
   function handleModeNext() {
@@ -95,23 +88,19 @@ export function SetupPage({
     const qs = settings.quickStart
     const parts: string[] = []
     parts.push(qs.recordKind === 'video' ? '영상 + 음성' : '녹음만')
-    if (modeId === 'career' && qs.questionCount > 1) {
-      parts.push(`연속 ${qs.questionCount}문항`)
-    } else {
-      parts.push('질문 1개')
-    }
+    parts.push(qs.questionCount > 1 ? `연속 ${qs.questionCount}문항` : '질문 1개')
     parts.push(qs.timeLimit.enabled ? `질문당 ${formatDuration(qs.timeLimit.limitSeconds)}` : '시간 제한 없음')
     return parts.join(' · ')
   }
 
   function shuffle() {
-    refreshQuestions(careerFlow, modeId ?? 'career')
+    if (modeId) refreshQuestions(questionFlow, modeId)
   }
 
   function handleCountChange(count: 1 | 3 | 5) {
-    const flow: CareerFlow = count === 1 ? 'single' : count === 3 ? 'triple' : 'quint'
-    setCareerFlow(flow)
-    refreshQuestions(flow, modeId ?? 'career')
+    const flow: QuestionFlow = count === 1 ? 'single' : count === 3 ? 'triple' : 'quint'
+    setQuestionFlow(flow)
+    if (modeId) refreshQuestions(flow, modeId)
   }
 
   const canStart = !multiMode || timeLimit.enabled
@@ -151,8 +140,8 @@ export function SetupPage({
   const stepTitles: Record<StepKey, string> = {
     mode: '면접 종류',
     time: '시간 제한',
-    record: '녹화 방식',
     review: '질문 확인',
+    record: '녹화 방식',
   }
 
   return (
@@ -281,49 +270,59 @@ export function SetupPage({
         )}
 
         {currentStep === 'record' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <RecordCard
-              active={recordKind === 'video'}
-              onClick={() => setRecordKind('video')}
-              icon="video"
-              title="영상 + 음성"
-              desc="표정·시선·자세까지 돌아보기"
-            />
-            <RecordCard
-              active={recordKind === 'audio'}
-              onClick={() => setRecordKind('audio')}
-              icon="mic"
-              title="녹음만"
-              desc="말투·속도·내용에 집중"
-            />
-          </div>
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <RecordCard
+                active={recordKind === 'video'}
+                onClick={() => setRecordKind('video')}
+                icon="video"
+                title="영상 + 음성"
+                desc="표정·시선·자세까지 돌아보기"
+              />
+              <RecordCard
+                active={recordKind === 'audio'}
+                onClick={() => setRecordKind('audio')}
+                icon="mic"
+                title="녹음만"
+                desc="말투·속도·내용에 집중"
+              />
+            </div>
+            <div
+              className="glass-card"
+              style={{ padding: 14, marginTop: 16, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.7 }}
+            >
+              <div>· 질문: {questionCount > 1 ? `연속 ${questionCount}문항` : '1개'}</div>
+              <div>
+                · 시간: {timeLimit.enabled ? `질문당 ${formatDuration(timeLimit.limitSeconds)}` : '제한 없음'}
+              </div>
+              {multiMode && <div>· 시간 종료 시 다음 질문으로 자동 전환</div>}
+            </div>
+          </>
         )}
 
         {currentStep === 'review' && (
           <>
-            {isCareer && (
-              <div style={{ marginBottom: 16 }}>
-                <label className="label-sm" style={{ marginBottom: 8, display: 'block' }}>질문 개수</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {([1, 3, 5] as const).map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      className={`chip ${questionCount === n ? 'active' : ''}`}
-                      style={{ flex: 1, justifyContent: 'center' }}
-                      onClick={() => handleCountChange(n)}
-                    >
-                      {n === 1 ? '1개' : `${n}문항`}
-                    </button>
-                  ))}
-                </div>
-                {multiMode && (
-                  <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: '8px 0 0', lineHeight: 1.4 }}>
-                    질문당 시간이 끝나면 다음 질문으로 자동 전환됩니다.
-                  </p>
-                )}
+            <div style={{ marginBottom: 16 }}>
+              <label className="label-sm" style={{ marginBottom: 8, display: 'block' }}>질문 개수</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {([1, 3, 5] as const).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`chip ${questionCount === n ? 'active' : ''}`}
+                    style={{ flex: 1, justifyContent: 'center' }}
+                    onClick={() => handleCountChange(n)}
+                  >
+                    {n === 1 ? '1개' : `${n}문항`}
+                  </button>
+                ))}
               </div>
-            )}
+              {multiMode && (
+                <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: '8px 0 0', lineHeight: 1.4 }}>
+                  질문당 시간이 끝나면 다음 질문으로 자동 전환됩니다.
+                </p>
+              )}
+            </div>
 
             <div
               style={{
@@ -389,7 +388,6 @@ export function SetupPage({
               className="glass-card"
               style={{ padding: 14, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.7 }}
             >
-              <div>· 녹화: {recordKind === 'video' ? '영상 + 음성' : '녹음만'}</div>
               <div>
                 · 시간: {timeLimit.enabled ? `질문당 ${formatDuration(timeLimit.limitSeconds)}` : '제한 없음'}
               </div>
@@ -400,7 +398,7 @@ export function SetupPage({
       </div>
 
       <footer style={{ paddingTop: 16 }}>
-        {currentStep === 'review' ? (
+        {currentStep === 'record' ? (
           <>
             <button
               type="button"
