@@ -12,8 +12,6 @@ import type {
   RecordKind,
   TimeLimitConfig,
 } from '../types'
-import type { PracticeSession } from '../types'
-
 type CareerFlow = 'single' | 'triple' | 'quint'
 type StepKey = 'mode' | 'time' | 'record' | 'review'
 
@@ -22,7 +20,6 @@ const MAX_CUSTOM_QUESTIONS = 20
 interface Props {
   settings: AppSettings
   modes: ModeInfo[]
-  lastSummary?: PracticeSession
   onBack: () => void
   onStart: (ctx: PracticeContext) => void
   onQuickStart: (modeId: PracticeModeId) => void
@@ -30,7 +27,7 @@ interface Props {
   onDeleteMode: (id: string) => void
 }
 
-export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQuickStart, onAddMode, onDeleteMode }: Props) {
+export function SetupPage({ settings, modes, onBack, onStart, onQuickStart, onAddMode, onDeleteMode }: Props) {
   const [modeId, setModeId] = useState<PracticeModeId | null>(null)
   const [careerFlow, setCareerFlow] = useState<CareerFlow>('single')
   const [questions, setQuestions] = useState<string[]>([])
@@ -40,7 +37,6 @@ export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQui
     reminders: { ...settings.defaultTimeLimit.reminders },
   })
   const [stepIndex, setStepIndex] = useState(0)
-  const [showSummary, setShowSummary] = useState(!!lastSummary?.summary.focusNext)
   const [hideQuestions, setHideQuestions] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newLabel, setNewLabel] = useState('')
@@ -71,7 +67,6 @@ export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQui
 
   function handleModeSelect(id: PracticeModeId) {
     setModeId(id)
-    setShowSummary(false)
     if (id !== 'career') {
       setCareerFlow('single')
       setQuestions([pickRandomQuestion(id)])
@@ -182,9 +177,6 @@ export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQui
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         {currentStep === 'mode' && (
           <>
-            {showSummary && lastSummary && (
-              <SummaryCard summary={lastSummary.summary} onClose={() => setShowSummary(false)} />
-            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {modes.map((m) => (
                 <div key={m.id} style={{ position: 'relative' }}>
@@ -464,68 +456,6 @@ export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQui
         )}
       </footer>
     </div>
-  )
-}
-
-function SummaryCard({
-  summary,
-  onClose,
-}: {
-  summary: PracticeSession['summary']
-  onClose: () => void
-}) {
-  if (!summary.wellDone && !summary.improve && !summary.focusNext) return null
-  return (
-    <div
-      className="glass-card"
-      style={{
-        padding: 16,
-        marginBottom: 16,
-        borderColor: 'var(--accent)',
-        background: 'var(--accent-soft)',
-      }}
-    >
-      <p style={{ margin: '0 0 10px', fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.04em' }}>
-        지난 연습에서 남긴 말
-      </p>
-      {summary.focusNext && (
-        <p style={{ margin: '0 0 6px', fontSize: '0.92rem', fontWeight: 600 }}>
-          <SummaryTag label="이번 집중" color="var(--accent)" /> {summary.focusNext}
-        </p>
-      )}
-      {summary.improve && (
-        <p style={{ margin: '0 0 5px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          <SummaryTag label="고칠 점" color="var(--rose)" /> {summary.improve}
-        </p>
-      )}
-      {summary.wellDone && (
-        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          <SummaryTag label="잘한 점" color="var(--teal)" /> {summary.wellDone}
-        </p>
-      )}
-      <button type="button" className="btn btn-ghost" style={{ marginTop: 8, fontSize: '0.8rem', padding: '6px 0' }} onClick={onClose}>
-        닫기
-      </button>
-    </div>
-  )
-}
-
-function SummaryTag({ label, color }: { label: string; color: string }) {
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        fontSize: '0.68rem',
-        fontWeight: 700,
-        color,
-        border: `1px solid ${color}`,
-        borderRadius: 6,
-        padding: '1px 6px',
-        marginRight: 4,
-      }}
-    >
-      {label}
-    </span>
   )
 }
 

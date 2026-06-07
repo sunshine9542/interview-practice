@@ -105,7 +105,7 @@ export type View =
   | 'records'
   | 'settings'
 
-export const HOME_RECENT_LIMIT = 5
+export const HOME_RECENT_LIMIT = 2
 
 export interface PracticeContext {
   modeId: PracticeModeId

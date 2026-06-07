@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { LandscapePcHint } from '../components/LandscapePcHint'
+import { LastSummaryCard } from '../components/LastSummaryCard'
 import { SessionList } from '../components/SessionList'
 import { isMobileViewport } from '../utils/layout'
 import { HOME_RECENT_LIMIT, type LayoutMode, type PracticeSession } from '../types'
@@ -15,6 +16,7 @@ interface Props {
   sessions: PracticeSession[]
   modes: ModeInfo[]
   lastSession?: PracticeSession
+  lastSummary?: PracticeSession
   continueDesc: string
   layoutMode: LayoutMode
   onToggleLayout: () => void
@@ -24,7 +26,7 @@ interface Props {
   onOpenAllRecords: () => void
 }
 
-export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMode, onToggleLayout, onStart, onContinue, onOpenReview, onOpenAllRecords }: Props) {
+export function HomePage({ sessions, modes, lastSession, lastSummary, continueDesc, layoutMode, onToggleLayout, onStart, onContinue, onOpenReview, onOpenAllRecords }: Props) {
   const recent = sessions.slice(0, HOME_RECENT_LIMIT)
   const weekCount = sessions.filter((s) => s.createdAt >= Date.now() - 7 * 86400000).length
   const lastMode = lastSession ? modes.find((m) => m.id === lastSession.modeId) : undefined
@@ -162,26 +164,26 @@ export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMod
       </div>
 
       {recent.length > 0 ? (
-        <section style={{ marginTop: 18 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <h2 className="label-sm" style={{ margin: 0 }}>
+        <>
+          <section style={{ marginTop: 18 }}>
+            <h2 className="label-sm" style={{ margin: '0 0 10px' }}>
               최근 기록
             </h2>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>최대 {HOME_RECENT_LIMIT}개</span>
-          </div>
-          <SessionList sessions={recent} modes={modes} onOpen={onOpenReview} />
-          {sessions.length > HOME_RECENT_LIMIT && (
-            <button
-              type="button"
-              className="btn btn-ghost btn-block"
-              onClick={onOpenAllRecords}
-              style={{ marginTop: 10, fontSize: '0.86rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-            >
-              더보기 ({sessions.length - HOME_RECENT_LIMIT}개)
-              <Icon name="arrowRight" size={14} />
-            </button>
-          )}
-        </section>
+            <SessionList sessions={recent} modes={modes} onOpen={onOpenReview} />
+            {sessions.length > HOME_RECENT_LIMIT && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-block"
+                onClick={onOpenAllRecords}
+                style={{ marginTop: 10, fontSize: '0.86rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+              >
+                <Icon name="plus" size={14} />
+                더보기
+              </button>
+            )}
+          </section>
+          {lastSummary && <LastSummaryCard summary={lastSummary.summary} />}
+        </>
       ) : (
         <section style={{ marginTop: 24 }}>
           <div

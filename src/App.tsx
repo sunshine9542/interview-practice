@@ -285,6 +285,7 @@ export default function App() {
           sessions={sessions}
           modes={modes}
           lastSession={sessions[0]}
+          lastSummary={lastSummary}
           continueDesc={
             sessions[0]
               ? buildDetailParts(
@@ -312,7 +313,6 @@ export default function App() {
         <SetupPage
           settings={settings}
           modes={modes}
-          lastSummary={lastSummary}
           onBack={goBack}
           onStart={(ctx) => {
             setPracticeContext(ctx)
