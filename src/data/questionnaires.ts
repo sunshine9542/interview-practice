@@ -59,6 +59,22 @@ export function getQuestionnaireTemplate(
   ]
 }
 
+export const MODE_FOCUS_POINTS: Record<string, string[]> = {
+  career: ['결론 선행', 'STAR 구조', '시간 안 마무리', '논리·자신감·표정'],
+  customer: ['공감 표현', '사실 확인', '해결안 제시', '침착한 말투'],
+  media: ['핵심 메시지', '30초 요점 전달', '간결함·전달력'],
+  presentation: ['도입·근거', '구조·흐름', '시간 준수', 'Q&A 대비'],
+  english: ['Fluency', 'Clarity', 'Grammar', 'Confidence'],
+}
+
+export function getModeFocusPoints(modeId: PracticeModeId): string[] {
+  if (modeId in MODE_FOCUS_POINTS) return MODE_FOCUS_POINTS[modeId]
+  return getQuestionnaireTemplate(modeId)
+    .filter((item) => !item.custom)
+    .slice(0, 4)
+    .map((item) => item.label.replace(/\?$/, ''))
+}
+
 export function getCustomFeedbackItems(
   settings: { customFeedbackByMode: Partial<Record<string, QuestionnaireItem[]>> },
   modeId: PracticeModeId,

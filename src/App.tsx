@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Layout } from './components/Layout'
 import {
   deleteSession,
@@ -23,7 +23,6 @@ import { SettingsPage } from './pages/SettingsPage'
 import { applyLayout, applyTheme } from './utils/theme'
 import { getAllModes } from './data/modes'
 import { pickMultipleQuestions, pickRandomQuestion, setCustomModes } from './data/questions'
-import { computeItemAverages, computeOverallScaleAverage } from './utils/stats'
 import { formatDuration, uid } from './utils/format'
 import type {
   AppSettings,
@@ -59,9 +58,6 @@ export default function App() {
 
   const modes = getAllModes(customModes)
   const focusKeyword = lastSummary?.summary.focusNext?.trim() || undefined
-
-  const scoreItems = useMemo(() => computeItemAverages(sessions, settings), [sessions, settings])
-  const overallScore = useMemo(() => computeOverallScaleAverage(sessions), [sessions])
 
   const handleAddMode = (mode: CustomMode) => {
     const next = [...customModes, mode]
@@ -333,8 +329,9 @@ export default function App() {
       )}
       {view === 'stats-scores' && (
         <ScoreDetailPage
-          items={scoreItems}
-          overall={overallScore}
+          sessions={sessions}
+          modes={modes}
+          settings={settings}
           onBack={goBack}
         />
       )}

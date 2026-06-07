@@ -2,11 +2,7 @@ import type { ModeInfo } from '../data/modes'
 import { Icon } from '../components/Icon'
 import { SimpleBarChart } from '../components/SimpleBarChart'
 import { SimpleLineChart } from '../components/SimpleLineChart'
-import {
-  computeDailyCounts,
-  computeOverallScaleAverage,
-  computeWeeklyScoreTrend,
-} from '../utils/stats'
+import { computeDailyScoreTrend, computeOverallScaleAverage } from '../utils/stats'
 import type { PracticeSession } from '../types'
 
 interface Props {
@@ -16,8 +12,6 @@ interface Props {
 }
 
 export function StatsPage({ sessions, modes, onOpenScores }: Props) {
-  const weekAgo = Date.now() - 7 * 86400000
-  const weekCount = sessions.filter((s) => s.createdAt >= weekAgo).length
   const overall = computeOverallScaleAverage(sessions)
   const avgScale = overall !== null ? overall.toFixed(1) : '—'
 
@@ -34,8 +28,7 @@ export function StatsPage({ sessions, modes, onOpenScores }: Props) {
   const videoCount = sessions.filter((s) => s.recordKind === 'video').length
   const audioCount = sessions.filter((s) => s.recordKind === 'audio').length
 
-  const dailyCounts = computeDailyCounts(sessions)
-  const weeklyScores = computeWeeklyScoreTrend(sessions)
+  const dailyScores = computeDailyScoreTrend(sessions)
 
   return (
     <>
@@ -51,32 +44,26 @@ export function StatsPage({ sessions, modes, onOpenScores }: Props) {
         }}
       >
         <StatCard label="전체 연습" value={String(sessions.length)} />
-        <StatCard label="최근 7일" value={String(weekCount)} />
+        <StatCard label="면접 종류" value={String(byMode.length)} sub="연습한 유형 수" />
         <button
           type="button"
           className="stat-card-btn"
           onClick={onOpenScores}
-          disabled={overall === null}
+          disabled={sessions.length === 0}
         >
-          <StatCard label="평균 자기점수" value={avgScale} sub="1~5 척도 · 탭하여 항목별" clickable />
+          <StatCard label="평균 자기점수" value={avgScale} sub="1~5 척도 · 탭하여 면접별" clickable />
         </button>
         <StatCard label="총평 작성" value={String(improveTexts.length)} sub="고칠 점 있음" />
       </div>
 
-      {sessions.length > 0 && (
+      {dailyScores.length > 0 && (
         <>
-          <h2 className="label-sm">최근 7일 연습</h2>
+          <h2 className="label-sm">일별 평균 점수</h2>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
+            날짜별 1~5 척도 평균으로 성장 추이를 확인하세요.
+          </p>
           <div className="glass-card" style={{ padding: 16, marginBottom: 24 }}>
-            <SimpleBarChart items={dailyCounts.map((d) => ({ label: d.label, value: d.count }))} color="var(--accent)" />
-          </div>
-        </>
-      )}
-
-      {weeklyScores.length > 1 && (
-        <>
-          <h2 className="label-sm">주간 평균 점수 추이</h2>
-          <div className="glass-card" style={{ padding: 16, marginBottom: 24 }}>
-            <SimpleLineChart points={weeklyScores.map((w) => ({ label: w.label, value: w.average }))} />
+            <SimpleLineChart points={dailyScores.map((d) => ({ label: d.label, value: d.average }))} />
           </div>
         </>
       )}
@@ -177,7 +164,7 @@ function StatCard({
       {sub && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4 }}>{sub}</div>}
       {clickable && (
         <span style={{ display: 'inline-flex', marginTop: 8, fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 700, alignItems: 'center', gap: 4 }}>
-          항목별 보기 <Icon name="arrowRight" size={12} />
+          면접별 보기 <Icon name="arrowRight" size={12} />
         </span>
       )}
     </div>

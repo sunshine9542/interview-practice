@@ -1,5 +1,5 @@
 import { getQuestionnaireTemplate } from '../data/questionnaires'
-import type { AppSettings, PracticeSession, QuestionnaireItem } from '../types'
+import type { AppSettings, PracticeModeId, PracticeSession, QuestionnaireItem } from '../types'
 
 export interface ItemAverage {
   itemId: string
@@ -23,6 +23,26 @@ export interface WeeklyScore {
   average: number
 }
 
+export interface DailyScore {
+  label: string
+  dateKey: string
+  timestamp: number
+  average: number
+  sessionCount: number
+}
+
+function itemLabelsForMode(
+  settings: AppSettings,
+  modeId: PracticeModeId,
+): Map<string, { label: string; type: QuestionnaireItem['type']; custom?: boolean }> {
+  const map = new Map<string, { label: string; type: QuestionnaireItem['type']; custom?: boolean }>()
+  const custom = settings.customFeedbackByMode[modeId] ?? []
+  getQuestionnaireTemplate(modeId, custom).forEach((item) => {
+    map.set(item.id, { label: item.label, type: item.type, custom: item.custom })
+  })
+  return map
+}
+
 function allItemLabels(settings: AppSettings): Map<string, { label: string; type: QuestionnaireItem['type']; custom?: boolean }> {
   const map = new Map<string, { label: string; type: QuestionnaireItem['type']; custom?: boolean }>()
   const modeIds = new Set<string>()
@@ -30,19 +50,21 @@ function allItemLabels(settings: AppSettings): Map<string, { label: string; type
   for (const id of ['career', 'customer', 'media', 'presentation', 'english']) modeIds.add(id)
 
   modeIds.forEach((modeId) => {
-    const custom = settings.customFeedbackByMode[modeId] ?? []
-    getQuestionnaireTemplate(modeId, custom).forEach((item) => {
-      map.set(item.id, { label: item.label, type: item.type, custom: item.custom })
-    })
+    itemLabelsForMode(settings, modeId).forEach((meta, itemId) => map.set(itemId, meta))
   })
   return map
 }
 
-export function computeItemAverages(sessions: PracticeSession[], settings: AppSettings): ItemAverage[] {
-  const labels = allItemLabels(settings)
+export function computeItemAverages(
+  sessions: PracticeSession[],
+  settings: AppSettings,
+  modeId?: PracticeModeId,
+): ItemAverage[] {
+  const filtered = modeId ? sessions.filter((s) => s.modeId === modeId) : sessions
+  const labels = modeId ? itemLabelsForMode(settings, modeId) : allItemLabels(settings)
   const sums = new Map<string, { scaleSum: number; scaleCount: number; yes: number; yesCount: number }>()
 
-  sessions.forEach((s) => {
+  filtered.forEach((s) => {
     s.questionnaireAnswers.forEach((a) => {
       const meta = labels.get(a.itemId)
       if (!meta) return
@@ -80,9 +102,10 @@ export function computeItemAverages(sessions: PracticeSession[], settings: AppSe
   })
 }
 
-export function computeOverallScaleAverage(sessions: PracticeSession[]): number | null {
+export function computeOverallScaleAverage(sessions: PracticeSession[], modeId?: PracticeModeId): number | null {
+  const filtered = modeId ? sessions.filter((s) => s.modeId === modeId) : sessions
   const scores: number[] = []
-  sessions.forEach((s) => {
+  filtered.forEach((s) => {
     s.questionnaireAnswers.forEach((a) => {
       if (typeof a.value === 'number' && a.value >= 1 && a.value <= 5) scores.push(a.value)
     })
@@ -109,6 +132,40 @@ export function computeDailyCounts(sessions: PracticeSession[], days = 7): Daily
     })
   }
   return result
+}
+
+export function computeDailyScoreTrend(sessions: PracticeSession[]): DailyScore[] {
+  const byDay = new Map<string, { scores: number[]; ts: number; sessionIds: Set<string> }>()
+
+  sessions.forEach((s) => {
+    const dayScores: number[] = []
+    s.questionnaireAnswers.forEach((a) => {
+      if (typeof a.value === 'number' && a.value >= 1 && a.value <= 5) dayScores.push(a.value)
+    })
+    if (dayScores.length === 0) return
+
+    const d = new Date(s.createdAt)
+    d.setHours(0, 0, 0, 0)
+    const dateKey = d.toISOString().slice(0, 10)
+    const cur = byDay.get(dateKey) ?? { scores: [], ts: d.getTime(), sessionIds: new Set<string>() }
+    cur.scores.push(...dayScores)
+    cur.sessionIds.add(s.id)
+    byDay.set(dateKey, cur)
+  })
+
+  return Array.from(byDay.values())
+    .sort((a, b) => a.ts - b.ts)
+    .map(({ scores, ts, sessionIds }) => {
+      const d = new Date(ts)
+      const label = new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric' }).format(d)
+      return {
+        label,
+        dateKey: d.toISOString().slice(0, 10),
+        timestamp: ts,
+        average: scores.reduce((a, b) => a + b, 0) / scores.length,
+        sessionCount: sessionIds.size,
+      }
+    })
 }
 
 export function computeWeeklyScoreTrend(sessions: PracticeSession[], weeks = 6): WeeklyScore[] {

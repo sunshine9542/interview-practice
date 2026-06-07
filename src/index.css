@@ -1016,6 +1016,34 @@ input[type='range']:disabled::-webkit-slider-thumb {
   background: var(--accent);
 }
 
+.score-mode-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.score-mode-chip {
+  padding: 7px 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.score-focus-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.score-focus-tag {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .focus-keyword-banner {
   padding: 18px 16px;
   border-radius: var(--radius);
