@@ -42,6 +42,26 @@ const TEMPLATES: Record<PracticeModeId, QuestionnaireItem[]> = {
   ],
 }
 
-export function getQuestionnaireTemplate(modeId: PracticeModeId): QuestionnaireItem[] {
-  return TEMPLATES[modeId].map((item) => ({ ...item }))
+const FALLBACK_MODE = 'career'
+
+function baseTemplate(modeId: PracticeModeId): QuestionnaireItem[] {
+  const list = modeId in TEMPLATES ? TEMPLATES[modeId as keyof typeof TEMPLATES] : TEMPLATES[FALLBACK_MODE]
+  return list.map((item) => ({ ...item }))
+}
+
+export function getQuestionnaireTemplate(
+  modeId: PracticeModeId,
+  customItems: QuestionnaireItem[] = [],
+): QuestionnaireItem[] {
+  return [
+    ...baseTemplate(modeId),
+    ...customItems.map((item) => ({ ...item, custom: true })),
+  ]
+}
+
+export function getCustomFeedbackItems(
+  settings: { customFeedbackByMode: Partial<Record<string, QuestionnaireItem[]>> },
+  modeId: PracticeModeId,
+): QuestionnaireItem[] {
+  return settings.customFeedbackByMode[modeId] ?? []
 }

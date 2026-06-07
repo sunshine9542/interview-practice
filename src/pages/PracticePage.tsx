@@ -15,11 +15,12 @@ interface ReminderToast {
 interface Props {
   settings: AppSettings
   context: PracticeContext
+  focusKeyword?: string
   onCancel: () => void
   onComplete: (blob: Blob, mimeType: string, durationSeconds: number) => void
 }
 
-export function PracticePage({ settings, context, onCancel, onComplete }: Props) {
+export function PracticePage({ settings, context, focusKeyword, onCancel, onComplete }: Props) {
   const { questions, recordKind, timeLimit, autoNextQuestion } = context
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -472,6 +473,7 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
               limitEnabled={limitEnabled}
               limitSec={limitSec}
               mediaReady={mediaReady}
+              focusKeyword={focusKeyword}
               onStart={() => void runSequence()}
             />
           </div>
@@ -480,6 +482,12 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
 
       {recordKind === 'audio' && phase === 'preview' && (
         <div style={{ marginTop: 16 }}>
+          {focusKeyword && (
+            <div className="focus-keyword-banner" style={{ marginBottom: 14 }}>
+              <p className="focus-keyword-banner__label">이번 집중 키워드</p>
+              <p className="focus-keyword-banner__text">{focusKeyword}</p>
+            </div>
+          )}
           <PreviewStartPanel
             recordKind={recordKind}
             totalQuestions={totalQuestions}
@@ -680,6 +688,7 @@ function PreviewStartPanel({
   limitEnabled,
   limitSec,
   mediaReady,
+  focusKeyword,
   onStart,
 }: {
   recordKind: RecordKind
@@ -687,11 +696,18 @@ function PreviewStartPanel({
   limitEnabled: boolean
   limitSec: number
   mediaReady: boolean
+  focusKeyword?: string
   onStart: () => void
 }) {
   const action = recordKind === 'video' ? '녹화' : '녹음'
   return (
     <>
+      {focusKeyword && recordKind === 'video' && (
+        <div className="focus-keyword-banner focus-keyword-banner--overlay">
+          <p className="focus-keyword-banner__label">이번 집중 키워드</p>
+          <p className="focus-keyword-banner__text">{focusKeyword}</p>
+        </div>
+      )}
       {totalQuestions > 1 && (
         <p style={{ margin: '0 0 10px', fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 600, textAlign: 'center' }}>
           연속 {totalQuestions}문항 · 시간 종료 시 다음 질문

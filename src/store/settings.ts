@@ -28,4 +28,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   layoutMode: 'portrait',
   defaultTimeLimit: { ...DEFAULT_TIME_LIMIT, reminders: { ...DEFAULT_TIME_REMINDERS } },
   quickStart: { ...DEFAULT_QUICK_START, timeLimit: { ...DEFAULT_TIME_LIMIT, reminders: { ...DEFAULT_TIME_REMINDERS } } },
+  customFeedbackByMode: {},
 }

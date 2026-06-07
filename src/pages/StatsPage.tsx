@@ -1,43 +1,41 @@
 import type { ModeInfo } from '../data/modes'
 import { Icon } from '../components/Icon'
+import { SimpleBarChart } from '../components/SimpleBarChart'
+import { SimpleLineChart } from '../components/SimpleLineChart'
+import {
+  computeDailyCounts,
+  computeOverallScaleAverage,
+  computeWeeklyScoreTrend,
+} from '../utils/stats'
 import type { PracticeSession } from '../types'
 
 interface Props {
   sessions: PracticeSession[]
   modes: ModeInfo[]
+  onOpenScores: () => void
 }
 
-export function StatsPage({ sessions, modes }: Props) {
+export function StatsPage({ sessions, modes, onOpenScores }: Props) {
   const weekAgo = Date.now() - 7 * 86400000
   const weekCount = sessions.filter((s) => s.createdAt >= weekAgo).length
+  const overall = computeOverallScaleAverage(sessions)
+  const avgScale = overall !== null ? overall.toFixed(1) : '—'
 
-  const scaleScores: number[] = []
-  sessions.forEach((s) => {
-    s.questionnaireAnswers.forEach((a) => {
-      if (typeof a.value === 'number' && a.value >= 1 && a.value <= 5) {
-        scaleScores.push(a.value)
-      }
-    })
-  })
-  const avgScale =
-    scaleScores.length > 0
-      ? (scaleScores.reduce((a, b) => a + b, 0) / scaleScores.length).toFixed(1)
-      : '—'
+  const improveTexts = sessions.map((s) => s.summary.improve.trim()).filter(Boolean)
+  const focusTexts = sessions.map((s) => s.summary.focusNext.trim()).filter(Boolean)
 
-  const improveTexts = sessions
-    .map((s) => s.summary.improve.trim())
-    .filter(Boolean)
-  const focusTexts = sessions
-    .map((s) => s.summary.focusNext.trim())
-    .filter(Boolean)
-
-  const byMode = modes.map((m) => ({
-    mode: m,
-    count: sessions.filter((s) => s.modeId === m.id).length,
-  })).filter((x) => x.count > 0)
+  const byMode = modes
+    .map((m) => ({
+      mode: m,
+      count: sessions.filter((s) => s.modeId === m.id).length,
+    }))
+    .filter((x) => x.count > 0)
 
   const videoCount = sessions.filter((s) => s.recordKind === 'video').length
   const audioCount = sessions.filter((s) => s.recordKind === 'audio').length
+
+  const dailyCounts = computeDailyCounts(sessions)
+  const weeklyScores = computeWeeklyScoreTrend(sessions)
 
   return (
     <>
@@ -54,9 +52,34 @@ export function StatsPage({ sessions, modes }: Props) {
       >
         <StatCard label="전체 연습" value={String(sessions.length)} />
         <StatCard label="최근 7일" value={String(weekCount)} />
-        <StatCard label="평균 자기점수" value={avgScale} sub="1~5 척도" />
+        <button
+          type="button"
+          className="stat-card-btn"
+          onClick={onOpenScores}
+          disabled={overall === null}
+        >
+          <StatCard label="평균 자기점수" value={avgScale} sub="1~5 척도 · 탭하여 항목별" clickable />
+        </button>
         <StatCard label="총평 작성" value={String(improveTexts.length)} sub="고칠 점 있음" />
       </div>
+
+      {sessions.length > 0 && (
+        <>
+          <h2 className="label-sm">최근 7일 연습</h2>
+          <div className="glass-card" style={{ padding: 16, marginBottom: 24 }}>
+            <SimpleBarChart items={dailyCounts.map((d) => ({ label: d.label, value: d.count }))} color="var(--accent)" />
+          </div>
+        </>
+      )}
+
+      {weeklyScores.length > 1 && (
+        <>
+          <h2 className="label-sm">주간 평균 점수 추이</h2>
+          <div className="glass-card" style={{ padding: 16, marginBottom: 24 }}>
+            <SimpleLineChart points={weeklyScores.map((w) => ({ label: w.label, value: w.average }))} />
+          </div>
+        </>
+      )}
 
       {(videoCount > 0 || audioCount > 0) && (
         <>
@@ -71,22 +94,11 @@ export function StatsPage({ sessions, modes }: Props) {
       {byMode.length > 0 && (
         <>
           <h2 className="label-sm">모드별</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
-            {byMode.map(({ mode, count }) => (
-              <div
-                key={mode.id}
-                className="glass-card"
-                style={{ padding: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-                  <span className="option-icon" style={{ width: 34, height: 34, borderRadius: 10 }}>
-                    <Icon name={mode.icon} size={18} />
-                  </span>
-                  {mode.label}
-                </span>
-                <strong>{count}</strong>
-              </div>
-            ))}
+          <div className="glass-card" style={{ padding: 16, marginBottom: 24 }}>
+            <SimpleBarChart
+              items={byMode.map(({ mode, count }) => ({ label: mode.label, value: count }))}
+              color="var(--teal)"
+            />
           </div>
         </>
       )}
@@ -147,12 +159,27 @@ export function StatsPage({ sessions, modes }: Props) {
   )
 }
 
-function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function StatCard({
+  label,
+  value,
+  sub,
+  clickable,
+}: {
+  label: string
+  value: string
+  sub?: string
+  clickable?: boolean
+}) {
   return (
-    <div className="glass-card" style={{ padding: 16 }}>
+    <div className={`glass-card${clickable ? ' stat-card--clickable' : ''}`} style={{ padding: 16, textAlign: 'left' }}>
       <div style={{ fontSize: '1.6rem', fontWeight: 700 }}>{value}</div>
       <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{label}</div>
       {sub && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 4 }}>{sub}</div>}
+      {clickable && (
+        <span style={{ display: 'inline-flex', marginTop: 8, fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 700, alignItems: 'center', gap: 4 }}>
+          항목별 보기 <Icon name="arrowRight" size={12} />
+        </span>
+      )}
     </div>
   )
 }

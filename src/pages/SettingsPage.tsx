@@ -3,14 +3,20 @@ import { LandscapePcHint } from '../components/LandscapePcHint'
 import { TimeLimitFields } from '../components/TimeLimitFields'
 import { playCue, unlockAudio } from '../utils/sound'
 import { isMobileViewport } from '../utils/layout'
-import type { AppSettings, LayoutMode, QuickStartConfig, SoundType, StartMode, ThemeMode } from '../types'
+import type { ModeInfo } from '../data/modes'
+import { getCustomFeedbackItems } from '../data/questionnaires'
+import type { AppSettings, LayoutMode, PracticeModeId, QuickStartConfig, SoundType, StartMode, ThemeMode } from '../types'
 
 interface Props {
   settings: AppSettings
+  modes: ModeInfo[]
   onChange: (s: AppSettings) => void
+  onRemoveFeedbackItem: (modeId: PracticeModeId, itemId: string) => void
 }
 
-export function SettingsPage({ settings, onChange }: Props) {
+export function SettingsPage({ settings, modes, onChange, onRemoveFeedbackItem }: Props) {
+  const [feedbackModeId, setFeedbackModeId] = useState<PracticeModeId>(modes[0]?.id ?? 'career')
+  const customItems = getCustomFeedbackItems(settings, feedbackModeId)
   const [showLandscapeHint, setShowLandscapeHint] = useState(false)
   const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -235,6 +241,55 @@ export function SettingsPage({ settings, onChange }: Props) {
             녹음만
           </button>
         </div>
+      </section>
+
+      <section style={{ marginBottom: 28 }}>
+        <h2 className="label-sm">내 피드백 항목</h2>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 12px', lineHeight: 1.5 }}>
+          리뷰 화면에서 추가한 항목이 여기에도 표시됩니다. 모드별로 관리할 수 있어요.
+        </p>
+        <select
+          className="input-field"
+          value={feedbackModeId}
+          onChange={(e) => setFeedbackModeId(e.target.value)}
+          style={{ marginBottom: 12 }}
+        >
+          {modes.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+        {customItems.length === 0 ? (
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+            추가된 항목이 없습니다. 연습 후 리뷰에서 추가해 보세요.
+          </p>
+        ) : (
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {customItems.map((item) => (
+              <li
+                key={item.id}
+                className="glass-card"
+                style={{ padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}
+              >
+                <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+                  {item.label}
+                  <span style={{ marginLeft: 6, fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                    {item.type === 'scale' ? '1~5' : '예/아니오'}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ padding: '4px 8px', fontSize: '0.76rem', color: 'var(--rose)' }}
+                  onClick={() => onRemoveFeedbackItem(feedbackModeId, item.id)}
+                >
+                  삭제
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <div className="glass-card" style={{ padding: 16, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>

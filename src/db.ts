@@ -94,6 +94,10 @@ export function loadSettings(): AppSettings {
           },
         },
       },
+      customFeedbackByMode: {
+        ...DEFAULT_SETTINGS.customFeedbackByMode,
+        ...parsed.customFeedbackByMode,
+      },
     }
   } catch {
     return { ...DEFAULT_SETTINGS }

@@ -46,6 +46,8 @@ export interface AppSettings {
   layoutMode: LayoutMode
   defaultTimeLimit: TimeLimitConfig
   quickStart: QuickStartConfig
+  /** 모드별 사용자 추가 피드백 항목 */
+  customFeedbackByMode: Partial<Record<string, QuestionnaireItem[]>>
 }
 
 export type QuestionnaireItemType = 'yesno' | 'scale' | 'number' | 'text'
@@ -99,7 +101,11 @@ export type View =
   | 'practice'
   | 'review'
   | 'stats'
+  | 'stats-scores'
+  | 'records'
   | 'settings'
+
+export const HOME_RECENT_LIMIT = 5
 
 export interface PracticeContext {
   modeId: PracticeModeId

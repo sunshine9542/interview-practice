@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Layout } from './components/Layout'
 import {
   deleteSession,
@@ -11,15 +11,19 @@ import {
   saveSession,
   saveSettings,
 } from './db'
+import { useAppHistory } from './hooks/useAppHistory'
 import { HomePage } from './pages/HomePage'
 import { SetupPage } from './pages/SetupPage'
 import { PracticePage } from './pages/PracticePage'
 import { ReviewPage } from './pages/ReviewPage'
 import { StatsPage } from './pages/StatsPage'
+import { ScoreDetailPage } from './pages/ScoreDetailPage'
+import { RecordsPage } from './pages/RecordsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { applyLayout, applyTheme } from './utils/theme'
 import { getAllModes } from './data/modes'
 import { pickMultipleQuestions, pickRandomQuestion, setCustomModes } from './data/questions'
+import { computeItemAverages, computeOverallScaleAverage } from './utils/stats'
 import { formatDuration, uid } from './utils/format'
 import type {
   AppSettings,
@@ -27,8 +31,8 @@ import type {
   PracticeModeId,
   PracticeContext,
   PracticeSession,
+  QuestionnaireItem,
   RecordKind,
-  View,
 } from './types'
 
 function normalizeSession(raw: PracticeSession): PracticeSession {
@@ -39,7 +43,7 @@ function normalizeSession(raw: PracticeSession): PracticeSession {
 }
 
 export default function App() {
-  const [view, setView] = useState<View>('home')
+  const { view, navigate, resetTo, popPracticeForReview, goBack } = useAppHistory('home')
   const [settings, setSettings] = useState<AppSettings>(loadSettings)
   const [sessions, setSessions] = useState<PracticeSession[]>([])
   const [practiceContext, setPracticeContext] = useState<PracticeContext | null>(null)
@@ -53,6 +57,10 @@ export default function App() {
   })
 
   const modes = getAllModes(customModes)
+  const focusKeyword = lastSummary?.summary.focusNext?.trim() || undefined
+
+  const scoreItems = useMemo(() => computeItemAverages(sessions, settings), [sessions, settings])
+  const overallScore = useMemo(() => computeOverallScaleAverage(sessions), [sessions])
 
   const handleAddMode = (mode: CustomMode) => {
     const next = [...customModes, mode]
@@ -87,9 +95,39 @@ export default function App() {
     void refreshSessions()
   }, [refreshSessions])
 
+  useEffect(() => {
+    if (view !== 'practice') setPracticeContext(null)
+    if (view !== 'review') {
+      setReviewSession(null)
+      setReviewIsNew(false)
+    }
+  }, [view])
+
   const handleSettingsChange = (s: AppSettings) => {
     setSettings(s)
     saveSettings(s)
+  }
+
+  const handleAddFeedbackItem = (modeId: PracticeModeId, item: QuestionnaireItem) => {
+    const prev = settings.customFeedbackByMode[modeId] ?? []
+    handleSettingsChange({
+      ...settings,
+      customFeedbackByMode: {
+        ...settings.customFeedbackByMode,
+        [modeId]: [...prev, item],
+      },
+    })
+  }
+
+  const handleRemoveFeedbackItem = (modeId: PracticeModeId, itemId: string) => {
+    const prev = settings.customFeedbackByMode[modeId] ?? []
+    handleSettingsChange({
+      ...settings,
+      customFeedbackByMode: {
+        ...settings.customFeedbackByMode,
+        [modeId]: prev.filter((i) => i.id !== itemId),
+      },
+    })
   }
 
   const openReview = async (id: string) => {
@@ -97,7 +135,7 @@ export default function App() {
     if (s) {
       setReviewSession(normalizeSession(s))
       setReviewIsNew(false)
-      setView('review')
+      navigate('review')
     }
   }
 
@@ -123,7 +161,7 @@ export default function App() {
     setReviewSession(session)
     setReviewIsNew(true)
     setPracticeContext(null)
-    setView('review')
+    popPracticeForReview()
   }
 
   const handleQuickStart = (modeId: PracticeModeId) => {
@@ -131,9 +169,7 @@ export default function App() {
     const isCareer = modeId === 'career'
     const count = isCareer ? qs.questionCount : 1
     const questions =
-      count > 1
-        ? pickMultipleQuestions(modeId, count)
-        : [pickRandomQuestion(modeId)]
+      count > 1 ? pickMultipleQuestions(modeId, count) : [pickRandomQuestion(modeId)]
     const multiMode = isCareer && count > 1
     const ctx: PracticeContext = {
       modeId,
@@ -143,7 +179,7 @@ export default function App() {
       autoNextQuestion: multiMode && qs.timeLimit.enabled,
     }
     setPracticeContext(ctx)
-    setView('practice')
+    navigate('practice')
   }
 
   const handleContinue = () => {
@@ -151,13 +187,16 @@ export default function App() {
     if (!last) return
     const isCareer = last.modeId === 'career'
     const count = last.questions.length
-    const tl = last.timeLimitEnabled && last.questionLimitSeconds
-      ? { enabled: true, limitSeconds: last.questionLimitSeconds, reminders: settings.defaultTimeLimit.reminders }
-      : { ...settings.defaultTimeLimit, enabled: false }
+    const tl =
+      last.timeLimitEnabled && last.questionLimitSeconds
+        ? {
+            enabled: true,
+            limitSeconds: last.questionLimitSeconds,
+            reminders: settings.defaultTimeLimit.reminders,
+          }
+        : { ...settings.defaultTimeLimit, enabled: false }
     const questions =
-      count > 1
-        ? pickMultipleQuestions(last.modeId, count)
-        : [pickRandomQuestion(last.modeId)]
+      count > 1 ? pickMultipleQuestions(last.modeId, count) : [pickRandomQuestion(last.modeId)]
     const multiMode = isCareer && count > 1
     const ctx: PracticeContext = {
       modeId: last.modeId,
@@ -167,7 +206,7 @@ export default function App() {
       autoNextQuestion: multiMode && tl.enabled,
     }
     setPracticeContext(ctx)
-    setView('practice')
+    navigate('practice')
   }
 
   function buildDetailParts(
@@ -189,15 +228,21 @@ export default function App() {
     setReviewSession(session)
   }
 
+  const handleNavTab = (v: typeof view) => {
+    if (v === view) return
+    resetTo(v)
+    setPracticeContext(null)
+    setReviewSession(null)
+    setReviewIsNew(false)
+  }
+
   if (view === 'practice' && practiceContext) {
     return (
       <PracticePage
         settings={settings}
         context={practiceContext}
-        onCancel={() => {
-          setPracticeContext(null)
-          setView('setup')
-        }}
+        focusKeyword={focusKeyword}
+        onCancel={goBack}
         onComplete={handlePracticeComplete}
       />
     )
@@ -208,7 +253,10 @@ export default function App() {
       <ReviewPage
         session={normalizeSession(reviewSession)}
         isNew={reviewIsNew}
+        settings={settings}
         onSave={handleSaveSession}
+        onAddFeedbackItem={handleAddFeedbackItem}
+        onRemoveFeedbackItem={handleRemoveFeedbackItem}
         onDelete={
           reviewIsNew
             ? undefined
@@ -216,7 +264,7 @@ export default function App() {
                 await deleteSession(reviewSession.id)
                 await refreshSessions()
                 setReviewSession(null)
-                setView('home')
+                resetTo('home')
               }
         }
         onDone={async (updated) => {
@@ -224,14 +272,14 @@ export default function App() {
           await refreshSessions()
           setReviewSession(null)
           setReviewIsNew(false)
-          setView('home')
+          resetTo('home')
         }}
       />
     )
   }
 
   return (
-    <Layout view={view} onNavigate={setView}>
+    <Layout view={view} onNavigate={handleNavTab}>
       {view === 'home' && (
         <HomePage
           sessions={sessions}
@@ -254,9 +302,10 @@ export default function App() {
               layoutMode: settings.layoutMode === 'portrait' ? 'landscape' : 'portrait',
             })
           }
-          onStart={() => setView('setup')}
+          onStart={() => navigate('setup')}
           onContinue={handleContinue}
           onOpenReview={(id) => void openReview(id)}
+          onOpenAllRecords={() => navigate('records')}
         />
       )}
       {view === 'setup' && (
@@ -264,19 +313,45 @@ export default function App() {
           settings={settings}
           modes={modes}
           lastSummary={lastSummary}
-          onBack={() => setView('home')}
+          onBack={goBack}
           onStart={(ctx) => {
             setPracticeContext(ctx)
-            setView('practice')
+            navigate('practice')
           }}
           onQuickStart={handleQuickStart}
           onAddMode={handleAddMode}
           onDeleteMode={handleDeleteMode}
         />
       )}
-      {view === 'stats' && <StatsPage sessions={sessions} modes={modes} />}
+      {view === 'stats' && (
+        <StatsPage
+          sessions={sessions}
+          modes={modes}
+          onOpenScores={() => navigate('stats-scores')}
+        />
+      )}
+      {view === 'stats-scores' && (
+        <ScoreDetailPage
+          items={scoreItems}
+          overall={overallScore}
+          onBack={goBack}
+        />
+      )}
+      {view === 'records' && (
+        <RecordsPage
+          sessions={sessions}
+          modes={modes}
+          onBack={goBack}
+          onOpenReview={(id) => void openReview(id)}
+        />
+      )}
       {view === 'settings' && (
-        <SettingsPage settings={settings} onChange={handleSettingsChange} />
+        <SettingsPage
+          settings={settings}
+          modes={modes}
+          onChange={handleSettingsChange}
+          onRemoveFeedbackItem={handleRemoveFeedbackItem}
+        />
       )}
     </Layout>
   )

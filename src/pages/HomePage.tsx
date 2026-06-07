@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { LandscapePcHint } from '../components/LandscapePcHint'
-import { formatDate, formatDuration } from '../utils/format'
+import { SessionList } from '../components/SessionList'
 import { isMobileViewport } from '../utils/layout'
-import type { LayoutMode, PracticeSession } from '../types'
+import { HOME_RECENT_LIMIT, type LayoutMode, type PracticeSession } from '../types'
 import type { ModeInfo } from '../data/modes'
 import { Icon } from '../components/Icon'
 
@@ -21,10 +21,11 @@ interface Props {
   onStart: () => void
   onContinue: () => void
   onOpenReview: (id: string) => void
+  onOpenAllRecords: () => void
 }
 
-export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMode, onToggleLayout, onStart, onContinue, onOpenReview }: Props) {
-  const recent = sessions.slice(0, 5)
+export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMode, onToggleLayout, onStart, onContinue, onOpenReview, onOpenAllRecords }: Props) {
+  const recent = sessions.slice(0, HOME_RECENT_LIMIT)
   const weekCount = sessions.filter((s) => s.createdAt >= Date.now() - 7 * 86400000).length
   const lastMode = lastSession ? modes.find((m) => m.id === lastSession.modeId) : undefined
 
@@ -162,50 +163,24 @@ export function HomePage({ sessions, modes, lastSession, continueDesc, layoutMod
 
       {recent.length > 0 ? (
         <section style={{ marginTop: 18 }}>
-          <h2 className="label-sm">최근 기록</h2>
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {recent.map((s) => {
-              const mode = modes.find((m) => m.id === s.modeId)
-              return (
-                <li key={s.id}>
-                  <button
-                    type="button"
-                    className="glass-card"
-                    style={{ width: '100%', padding: 14, textAlign: 'left', display: 'flex', gap: 13, alignItems: 'center' }}
-                    onClick={() => onOpenReview(s.id)}
-                  >
-                    <span className="option-icon" style={{ width: 40, height: 40 }}>
-                      {mode && <Icon name={mode.icon} size={20} />}
-                    </span>
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{mode?.label}</span>
-                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', flexShrink: 0 }}>
-                          {formatDate(s.createdAt)}
-                        </span>
-                      </span>
-                      <span
-                        style={{
-                          display: 'block',
-                          margin: '5px 0 0',
-                          fontSize: '0.82rem',
-                          color: 'var(--text-muted)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {s.questions.length > 1 ? `연속 ${s.questions.length}문항 · ${s.question}` : s.question}
-                      </span>
-                      <span style={{ display: 'block', fontSize: '0.74rem', color: 'var(--teal)', marginTop: 3, fontWeight: 600 }}>
-                        {s.recordKind === 'video' ? '영상' : '음성'} · {formatDuration(s.durationSeconds)}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <h2 className="label-sm" style={{ margin: 0 }}>
+              최근 기록
+            </h2>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>최대 {HOME_RECENT_LIMIT}개</span>
+          </div>
+          <SessionList sessions={recent} modes={modes} onOpen={onOpenReview} />
+          {sessions.length > HOME_RECENT_LIMIT && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-block"
+              onClick={onOpenAllRecords}
+              style={{ marginTop: 10, fontSize: '0.86rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+            >
+              더보기 ({sessions.length - HOME_RECENT_LIMIT}개)
+              <Icon name="arrowRight" size={14} />
+            </button>
+          )}
         </section>
       ) : (
         <section style={{ marginTop: 24 }}>

@@ -435,6 +435,12 @@ export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQui
       <footer style={{ paddingTop: 16 }}>
         {currentStep === 'review' ? (
           <>
+            {lastSummary?.summary.focusNext && (
+              <div className="focus-keyword-banner" style={{ marginBottom: 14 }}>
+                <p className="focus-keyword-banner__label">이번 집중 키워드</p>
+                <p className="focus-keyword-banner__text">{lastSummary.summary.focusNext}</p>
+              </div>
+            )}
             <button
               type="button"
               className="btn btn-primary btn-block"

@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
-import { getQuestionnaireTemplate } from '../data/questionnaires'
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { getCustomFeedbackItems, getQuestionnaireTemplate } from '../data/questionnaires'
 import { QuestionnaireForm } from '../components/QuestionnaireForm'
 import { Icon } from '../components/Icon'
-import { formatDuration } from '../utils/format'
-import { uid } from '../utils/format'
+import { formatDuration, uid } from '../utils/format'
 import type {
+  AppSettings,
+  PracticeModeId,
   PracticeSession,
   QuestionnaireAnswer,
+  QuestionnaireItem,
   SessionSummary,
   TimestampMemo,
 } from '../types'
@@ -14,12 +16,24 @@ import type {
 interface Props {
   session: PracticeSession
   isNew?: boolean
+  settings: AppSettings
   onSave: (session: PracticeSession) => void
+  onAddFeedbackItem: (modeId: PracticeModeId, item: QuestionnaireItem) => void
+  onRemoveFeedbackItem: (modeId: PracticeModeId, itemId: string) => void
   onDelete?: () => void
   onDone: (session: PracticeSession) => void
 }
 
-export function ReviewPage({ session, isNew, onSave, onDelete, onDone }: Props) {
+export function ReviewPage({
+  session,
+  isNew,
+  settings,
+  onSave,
+  onAddFeedbackItem,
+  onRemoveFeedbackItem,
+  onDelete,
+  onDone,
+}: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement>(null)
   const [url, setUrl] = useState('')
@@ -30,8 +44,16 @@ export function ReviewPage({ session, isNew, onSave, onDelete, onDone }: Props) 
   const [currentTime, setCurrentTime] = useState(0)
   const [mediaCompact, setMediaCompact] = useState(false)
 
-  const items = getQuestionnaireTemplate(session.modeId)
+  const items = useMemo(
+    () => getQuestionnaireTemplate(session.modeId, getCustomFeedbackItems(settings, session.modeId)),
+    [session.modeId, settings],
+  )
   const isVideo = session.recordKind === 'video'
+
+  const handleAddFeedbackItem = (label: string, type: 'scale' | 'yesno') => {
+    const item: QuestionnaireItem = { id: uid(), label, type, custom: true }
+    onAddFeedbackItem(session.modeId, item)
+  }
 
   useEffect(() => {
     const u = URL.createObjectURL(session.blob)
@@ -212,7 +234,13 @@ export function ReviewPage({ session, isNew, onSave, onDelete, onDone }: Props) 
 
       <section className="review-section">
         <h2 className="label-sm">셀프 코칭 질문지</h2>
-        <QuestionnaireForm items={items} answers={answers} onChange={setAnswers} />
+        <QuestionnaireForm
+          items={items}
+          answers={answers}
+          onChange={setAnswers}
+          onAddItem={handleAddFeedbackItem}
+          onRemoveItem={(id) => onRemoveFeedbackItem(session.modeId, id)}
+        />
       </section>
 
       <section className="review-section">

@@ -17,7 +17,12 @@ const NAV: { view: View; icon: IconName; label: string }[] = [
 ]
 
 export function Layout({ children, view, onNavigate, hideNav }: LayoutProps) {
-  const showNav = !hideNav && view !== 'practice' && view !== 'review'
+  const showNav =
+    !hideNav &&
+    view !== 'practice' &&
+    view !== 'review' &&
+    view !== 'records' &&
+    view !== 'stats-scores'
   return (
     <div className="app-shell">
       <div className="app-content">

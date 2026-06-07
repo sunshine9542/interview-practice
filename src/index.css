@@ -912,6 +912,140 @@ input[type='range']:disabled::-webkit-slider-thumb {
   margin-top: 24px;
 }
 
+.stat-card-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+
+.stat-card-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.stat-card--clickable {
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.stat-card-btn:not(:disabled):hover .stat-card--clickable,
+.stat-card-btn:not(:disabled):focus-visible .stat-card--clickable {
+  border-color: var(--accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.simple-bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.simple-bar-chart__row {
+  display: grid;
+  grid-template-columns: 36px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+}
+
+.simple-bar-chart__label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.simple-bar-chart__track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.simple-bar-chart__fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.simple-bar-chart__value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.simple-line-chart__svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.simple-line-chart__labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.score-detail-card {
+  padding: 14px 16px;
+}
+
+.score-detail-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.score-detail-card__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.score-detail-card__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.focus-keyword-banner {
+  padding: 18px 16px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  border: 1.5px solid var(--accent);
+  text-align: center;
+}
+
+.focus-keyword-banner--overlay {
+  margin-bottom: 14px;
+  width: 100%;
+}
+
+.focus-keyword-banner__label {
+  margin: 0 0 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.focus-keyword-banner__text {
+  margin: 0;
+  font-size: clamp(1.35rem, 6vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
 .review-page__footer {
   position: fixed;
   left: 0;
