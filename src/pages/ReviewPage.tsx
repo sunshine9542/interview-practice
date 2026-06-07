@@ -20,6 +20,7 @@ interface Props {
 }
 
 export function ReviewPage({ session, isNew, onSave, onDelete, onDone }: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null)
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement>(null)
   const [url, setUrl] = useState('')
   const [answers, setAnswers] = useState<QuestionnaireAnswer[]>(session.questionnaireAnswers)
@@ -27,6 +28,7 @@ export function ReviewPage({ session, isNew, onSave, onDelete, onDone }: Props) 
   const [memoText, setMemoText] = useState('')
   const [summary, setSummary] = useState<SessionSummary>(session.summary)
   const [currentTime, setCurrentTime] = useState(0)
+  const [mediaCompact, setMediaCompact] = useState(false)
 
   const items = getQuestionnaireTemplate(session.modeId)
   const isVideo = session.recordKind === 'video'
@@ -36,6 +38,15 @@ export function ReviewPage({ session, isNew, onSave, onDelete, onDone }: Props) 
     setUrl(u)
     return () => URL.revokeObjectURL(u)
   }, [session.blob])
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => setMediaCompact(el.scrollTop > 40)
+    el.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
 
   const addMemoAtCurrent = () => {
     if (!memoText.trim()) return
@@ -77,114 +88,94 @@ export function ReviewPage({ session, isNew, onSave, onDelete, onDone }: Props) 
   }
 
   return (
-    <div className="review-page">
+    <div className="review-page" ref={scrollRef}>
       <div className="review-page__body">
-      <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() =>
-            onDone({
-              ...session,
-              questionnaireAnswers: answers,
-              memos,
-              summary,
-            })
-          }
-        >
-          ← 목록
-        </button>
-        {onDelete && (
-          <button type="button" className="btn btn-ghost" style={{ color: 'var(--rose)' }} onClick={onDelete}>
-            삭제
-          </button>
-        )}
-      </header>
-
-      <div
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          background: 'var(--bg)',
-          paddingBottom: 12,
-          marginBottom: 8,
-        }}
-      >
-        <p
-          style={{
-            margin: '0 0 8px',
-            fontSize: '0.82rem',
-            color: 'var(--accent)',
-            fontWeight: 600,
-          }}
-        >
-          이번 질문
-        </p>
-        {session.questions.length > 1 ? (
-          <ol style={{ margin: '0 0 12px', paddingLeft: 20, fontSize: '0.9rem', lineHeight: 1.5 }}>
-            {session.questions.map((q, i) => (
-              <li key={i} style={{ marginBottom: 6 }}>
-                {q}
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p style={{ margin: '0 0 12px', fontSize: '0.95rem', lineHeight: 1.45 }}>{session.question}</p>
-        )}
-        {session.timeLimitEnabled && session.questionLimitSeconds && (
-          <p style={{ margin: '0 0 12px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            질문당 {formatDuration(session.questionLimitSeconds)} 제한
-            {session.questions.length > 1 ? ` · ${session.questions.length}문항 연속` : ''}
-          </p>
-        )}
-
-        {isVideo ? (
-          <video
-            ref={mediaRef as RefObject<HTMLVideoElement>}
-            src={url}
-            controls
-            playsInline
-            style={{
-              width: '100%',
-              borderRadius: 'var(--radius)',
-              background: '#000',
-              maxHeight: '42vh',
-            }}
-            onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-          />
-        ) : (
-          <div
-            className="glass-card"
-            style={{
-              padding: 20,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 12,
-            }}
+        <header className="review-page__header">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() =>
+              onDone({
+                ...session,
+                questionnaireAnswers: answers,
+                memos,
+                summary,
+              })
+            }
           >
-            <span className="option-icon" style={{ width: 48, height: 48, borderRadius: 14 }}>
-              <Icon name="mic" size={24} />
-            </span>
-            <audio
-              ref={mediaRef as RefObject<HTMLAudioElement>}
+            ← 목록
+          </button>
+          {onDelete && (
+            <button type="button" className="btn btn-ghost" style={{ color: 'var(--rose)' }} onClick={onDelete}>
+              삭제
+            </button>
+          )}
+        </header>
+
+        <div className={`review-media-sticky${mediaCompact ? ' review-media-sticky--compact' : ''}`}>
+          {isVideo ? (
+            <video
+              ref={mediaRef as RefObject<HTMLVideoElement>}
+              className="review-media-sticky__video"
               src={url}
               controls
-              style={{ width: '100%' }}
+              playsInline
               onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
             />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              {formatDuration(session.durationSeconds)}
-            </span>
+          ) : (
+            <div className="review-media-sticky__audio glass-card">
+              <span className="option-icon" style={{ width: 44, height: 44, borderRadius: 14 }}>
+                <Icon name="mic" size={22} />
+              </span>
+              <audio
+                ref={mediaRef as RefObject<HTMLAudioElement>}
+                src={url}
+                controls
+                style={{ width: '100%' }}
+                onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+              />
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                {formatDuration(session.durationSeconds)}
+              </span>
+            </div>
+          )}
+          <p className="review-media-sticky__time">
+            재생: {formatDuration(Math.floor(currentTime))}
+          </p>
+        </div>
+
+        <section className="review-questions">
+          <p className="review-questions__label">이번 질문</p>
+          {session.questions.length > 1 ? (
+            <ol className="review-questions__list">
+              {session.questions.map((q, i) => (
+                <li key={i}>{q}</li>
+              ))}
+            </ol>
+          ) : (
+            <p className="review-questions__single">{session.question}</p>
+          )}
+          {session.timeLimitEnabled && session.questionLimitSeconds && (
+            <p className="review-questions__meta">
+              질문당 {formatDuration(session.questionLimitSeconds)} 제한
+              {session.questions.length > 1 ? ` · ${session.questions.length}문항 연속` : ''}
+            </p>
+          )}
+        </section>
+
+        {!mediaCompact && (
+          <div className="review-scroll-hint" aria-hidden>
+            <div className="review-scroll-hint__peek">
+              <h2 className="label-sm" style={{ margin: 0 }}>
+                메모
+              </h2>
+              <p>아래로 스크롤하여 메모·셀프 코칭을 작성하세요</p>
+            </div>
+            <span className="review-scroll-hint__arrow">↓</span>
           </div>
         )}
-        <p style={{ margin: '8px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-          재생: {formatDuration(Math.floor(currentTime))}
-        </p>
-      </div>
 
-      <section style={{ marginTop: 20 }}>
+        <section className="review-section">
         <h2 className="label-sm">메모</h2>
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <input
@@ -219,12 +210,12 @@ export function ReviewPage({ session, isNew, onSave, onDelete, onDone }: Props) 
         ))}
       </section>
 
-      <section style={{ marginTop: 24 }}>
+      <section className="review-section">
         <h2 className="label-sm">셀프 코칭 질문지</h2>
         <QuestionnaireForm items={items} answers={answers} onChange={setAnswers} />
       </section>
 
-      <section style={{ marginTop: 24 }}>
+      <section className="review-section">
         <h2 className="label-sm">이번 연습 총평</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>

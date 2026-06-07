@@ -768,7 +768,10 @@ input[type='range']:disabled::-webkit-slider-thumb {
 .review-page {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 .review-page__body {
@@ -776,7 +779,137 @@ input[type='range']:disabled::-webkit-slider-thumb {
   max-width: 480px;
   width: 100%;
   margin: 0 auto;
-  padding: 12px 20px calc(88px + var(--safe-bottom));
+  padding: calc(12px + var(--safe-top)) 20px calc(88px + var(--safe-bottom));
+}
+
+.review-page__header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.review-media-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+}
+
+.review-media-sticky::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12px;
+  background: linear-gradient(to bottom, var(--bg), transparent);
+  pointer-events: none;
+}
+
+.review-media-sticky__video {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius);
+  background: #000;
+  max-height: min(32vh, 260px);
+  object-fit: contain;
+  transition: max-height 0.3s ease;
+}
+
+.review-media-sticky--compact .review-media-sticky__video {
+  max-height: min(18vh, 148px);
+}
+
+.review-media-sticky__audio {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: padding 0.3s ease;
+}
+
+.review-media-sticky--compact .review-media-sticky__audio {
+  padding: 10px 14px;
+  gap: 6px;
+}
+
+.review-media-sticky__time {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.review-questions {
+  margin-bottom: 10px;
+}
+
+.review-questions__label {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.review-questions__list {
+  margin: 0 0 10px;
+  padding-left: 20px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.review-questions__list li {
+  margin-bottom: 6px;
+}
+
+.review-questions__single {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.review-questions__meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.review-scroll-hint {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 4px 0 14px;
+  padding: 12px 14px 10px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.review-scroll-hint__peek p {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.review-scroll-hint__arrow {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  color: var(--teal);
+  font-weight: 700;
+  animation: peekBounce 1.6s ease infinite;
+}
+
+.review-section {
+  margin-top: 20px;
+}
+
+.review-section + .review-section {
+  margin-top: 24px;
 }
 
 .review-page__footer {
@@ -817,6 +950,11 @@ input[type='range']:disabled::-webkit-slider-thumb {
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
+}
+
+@keyframes peekBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.7; }
+  50% { transform: translateY(4px); opacity: 1; }
 }
 
 @keyframes recordingPulse {
