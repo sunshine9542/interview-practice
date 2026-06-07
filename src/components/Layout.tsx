@@ -37,7 +37,7 @@ export function Layout({ children, view, onNavigate, hideNav }: LayoutProps) {
               className={`nav-item ${view === item.view ? 'active' : ''}`}
               onClick={() => onNavigate(item.view)}
             >
-              <Icon name={item.icon} size={21} />
+              <Icon name={item.icon} size={18} />
               <span>{item.label}</span>
             </button>
           ))}

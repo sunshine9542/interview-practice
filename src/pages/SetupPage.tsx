@@ -15,7 +15,7 @@ import type {
 import type { PracticeSession } from '../types'
 
 type CareerFlow = 'single' | 'triple' | 'quint'
-type StepKey = 'mode' | 'flow' | 'time' | 'record' | 'review'
+type StepKey = 'mode' | 'time' | 'record' | 'review'
 
 const MAX_CUSTOM_QUESTIONS = 20
 
@@ -50,12 +50,7 @@ export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQui
   const questionCount = careerFlow === 'single' ? 1 : careerFlow === 'triple' ? 3 : 5
   const multiMode = questionCount > 1
 
-  const steps = useMemo<StepKey[]>(() => {
-    const base: StepKey[] = ['mode']
-    if (isCareer) base.push('flow')
-    base.push('time', 'record', 'review')
-    return base
-  }, [isCareer])
+  const steps = useMemo<StepKey[]>(() => ['mode', 'time', 'record', 'review'], [])
 
   const currentStep = steps[Math.min(stepIndex, steps.length - 1)]
 
@@ -101,11 +96,6 @@ export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQui
     }
     parts.push(qs.timeLimit.enabled ? `질문당 ${formatDuration(qs.timeLimit.limitSeconds)}` : '시간 제한 없음')
     return parts.join(' · ')
-  }
-
-  function handleCareerFlow(flow: CareerFlow) {
-    setCareerFlow(flow)
-    refreshQuestions(flow, 'career')
   }
 
   function shuffle() {
@@ -158,7 +148,6 @@ export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQui
 
   const stepTitles: Record<StepKey, string> = {
     mode: '면접 종류',
-    flow: '면접 형식',
     time: '시간 제한',
     record: '녹화 방식',
     review: '질문 확인',
@@ -288,29 +277,6 @@ export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQui
           </>
         )}
 
-        {currentStep === 'flow' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <FlowCard
-              active={careerFlow === 'single'}
-              onClick={() => handleCareerFlow('single')}
-              title="질문 1개"
-              desc="한 질문에 집중해서 답변"
-            />
-            <FlowCard
-              active={careerFlow === 'triple'}
-              onClick={() => handleCareerFlow('triple')}
-              title="연속 3문항"
-              desc="질문당 시간이 끝나면 다음 질문으로"
-            />
-            <FlowCard
-              active={careerFlow === 'quint'}
-              onClick={() => handleCareerFlow('quint')}
-              title="연속 5문항"
-              desc="질문당 시간이 끝나면 다음 질문으로"
-            />
-          </div>
-        )}
-
         {currentStep === 'time' && (
           <TimeLimitFields value={timeLimit} onChange={setTimeLimit} showMultiHint={multiMode} />
         )}
@@ -336,27 +302,29 @@ export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQui
 
         {currentStep === 'review' && (
           <>
-            <div style={{ marginBottom: 16 }}>
-              <label className="label-sm" style={{ marginBottom: 8, display: 'block' }}>질문 개수</label>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {([1, 3, 5] as const).map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    className={`chip ${questionCount === n ? 'active' : ''}`}
-                    style={{ flex: 1, justifyContent: 'center' }}
-                    onClick={() => handleCountChange(n)}
-                  >
-                    {n === 1 ? '1개' : `${n}문항`}
-                  </button>
-                ))}
+            {isCareer && (
+              <div style={{ marginBottom: 16 }}>
+                <label className="label-sm" style={{ marginBottom: 8, display: 'block' }}>질문 개수</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {([1, 3, 5] as const).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      className={`chip ${questionCount === n ? 'active' : ''}`}
+                      style={{ flex: 1, justifyContent: 'center' }}
+                      onClick={() => handleCountChange(n)}
+                    >
+                      {n === 1 ? '1개' : `${n}문항`}
+                    </button>
+                  ))}
+                </div>
+                {multiMode && (
+                  <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: '8px 0 0', lineHeight: 1.4 }}>
+                    질문당 시간이 끝나면 다음 질문으로 자동 전환됩니다.
+                  </p>
+                )}
               </div>
-              {multiMode && (
-                <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: '8px 0 0', lineHeight: 1.4 }}>
-                  질문당 시간이 끝나면 다음 질문으로 자동 전환됩니다.
-                </p>
-              )}
-            </div>
+            )}
 
             <div
               style={{
@@ -435,12 +403,6 @@ export function SetupPage({ settings, modes, lastSummary, onBack, onStart, onQui
       <footer style={{ paddingTop: 16 }}>
         {currentStep === 'review' ? (
           <>
-            {lastSummary?.summary.focusNext && (
-              <div className="focus-keyword-banner" style={{ marginBottom: 14 }}>
-                <p className="focus-keyword-banner__label">이번 집중 키워드</p>
-                <p className="focus-keyword-banner__text">{lastSummary.summary.focusNext}</p>
-              </div>
-            )}
             <button
               type="button"
               className="btn btn-primary btn-block"
@@ -564,27 +526,6 @@ function SummaryTag({ label, color }: { label: string; color: string }) {
     >
       {label}
     </span>
-  )
-}
-
-function FlowCard({
-  active,
-  onClick,
-  title,
-  desc,
-}: {
-  active: boolean
-  onClick: () => void
-  title: string
-  desc: string
-}) {
-  return (
-    <button type="button" className={`option-card ${active ? 'selected' : ''}`} onClick={onClick}>
-      <span>
-        <span className="option-title">{title}</span>
-        <span className="option-desc">{desc}</span>
-      </span>
-    </button>
   )
 }
 
