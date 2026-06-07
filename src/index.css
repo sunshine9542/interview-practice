@@ -517,6 +517,55 @@ input[type='range']:disabled::-webkit-slider-thumb {
   animation: fadeIn 0.25s ease;
 }
 
+.landscape-pc-hint {
+  width: min(300px, calc(100% - 40px));
+  padding: 28px 22px;
+  text-align: center;
+  border-radius: var(--radius-lg);
+  background: var(--teal);
+  color: #fff;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landscape-pc-hint__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.landscape-pc-hint__title {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+}
+
+.landscape-pc-hint__desc {
+  margin: 0 0 20px;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.landscape-pc-hint .btn-primary {
+  background: #fff;
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.landscape-pc-hint .btn-primary:hover {
+  background: rgba(255, 255, 255, 0.92);
+}
+
 .flash-kicker {
   margin: 0 0 16px;
   font-size: 0.74rem;
