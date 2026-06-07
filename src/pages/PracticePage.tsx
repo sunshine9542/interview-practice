@@ -6,6 +6,8 @@ import type { AppSettings, PracticeContext, RecordKind, ReminderKind } from '../
 
 type Phase = 'preview' | 'flash' | 'countdown' | 'recording'
 
+const PRACTICE_COUNTDOWN_SEC = 3
+
 interface ReminderToast {
   label: string
   message: string
@@ -38,7 +40,7 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
 
   const [phase, setPhase] = useState<Phase>('preview')
   const [questionIndex, setQuestionIndex] = useState(0)
-  const [countdown, setCountdown] = useState(settings.countdownSeconds)
+  const [countdown, setCountdown] = useState(PRACTICE_COUNTDOWN_SEC)
   const [elapsed, setElapsed] = useState(0)
   const [questionElapsed, setQuestionElapsed] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -269,7 +271,7 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
 
   const runCountdown = useCallback(async () => {
     setPhase('countdown')
-    let left = settings.countdownSeconds
+    let left = PRACTICE_COUNTDOWN_SEC
     setCountdown(left)
     playCue('click')
 
@@ -281,7 +283,7 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
         playCue('click')
       }
     }
-  }, [settings.countdownSeconds])
+  }, [])
 
   const runSequence = useCallback(async () => {
     unlockAudio()
@@ -405,7 +407,7 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
               totalQuestions={totalQuestions}
               stable
             />
-            <CountdownRing countdown={countdown} total={settings.countdownSeconds} />
+            <CountdownRing countdown={countdown} total={PRACTICE_COUNTDOWN_SEC} />
           </div>
         )}
 
@@ -463,7 +465,7 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
             stable={phase !== 'flash'}
           />
           {phase === 'countdown' && (
-            <CountdownRing countdown={countdown} total={settings.countdownSeconds} />
+            <CountdownRing countdown={countdown} total={PRACTICE_COUNTDOWN_SEC} />
           )}
         </div>
       )}

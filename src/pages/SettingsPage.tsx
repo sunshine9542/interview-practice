@@ -213,15 +213,10 @@ export function SettingsPage({ settings, modes, onChange, onRemoveFeedbackItem }
       </section>
 
       <section style={{ marginBottom: 28 }}>
-        <h2 className="label-sm">카운트다운 ({settings.countdownSeconds}초)</h2>
-        <input
-          type="range"
-          min={2}
-          max={10}
-          value={settings.countdownSeconds}
-          onChange={(e) => patch({ countdownSeconds: Number(e.target.value) })}
-          style={{ width: '100%', accentColor: 'var(--teal)' }}
-        />
+        <h2 className="label-sm">카운트다운</h2>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+          질문 표시 후 <strong>3 · 2 · 1</strong> 카운트다운 뒤 자동 녹화가 시작됩니다.
+        </p>
       </section>
 
       <section style={{ marginBottom: 28 }}>
