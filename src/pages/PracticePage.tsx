@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { playCue, unlockAudio } from '../utils/sound'
 import { Icon } from '../components/Icon'
-import { flashDurationForQuestion, formatDuration } from '../utils/format'
+import { flashDurationForQuestion, formatDuration, nextQuestionBannerDuration } from '../utils/format'
 import type { AppSettings, PracticeContext, RecordKind, ReminderKind } from '../types'
 
 type Phase = 'preview' | 'flash' | 'countdown' | 'ready' | 'recording'
@@ -63,7 +63,10 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
   const showNextQuestionBanner = useCallback((text: string) => {
     playCue(settings.soundType)
     setQuestionBanner(text)
-    setTimeout(() => setQuestionBanner(null), flashDurationForQuestion(text, settings.questionFlashSeconds) * 1000)
+    setTimeout(
+      () => setQuestionBanner(null),
+      nextQuestionBannerDuration(text, settings.questionFlashSeconds) * 1000,
+    )
   }, [settings.soundType, settings.questionFlashSeconds])
 
   useEffect(() => {
@@ -281,16 +284,16 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
 
   const runSequence = useCallback(async () => {
     unlockAudio()
-    setPhase('flash')
     playCue(settings.soundType)
-
-    const flashMs = flashDurationForQuestion(currentQuestion, settings.questionFlashSeconds) * 1000
-    await delay(flashMs)
 
     if (settings.startMode === 'manual') {
       setPhase('ready')
       return
     }
+
+    setPhase('flash')
+    const flashMs = flashDurationForQuestion(currentQuestion, settings.questionFlashSeconds) * 1000
+    await delay(flashMs)
 
     await runCountdown()
     startRecording()
@@ -330,17 +333,13 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
         <div style={{ textAlign: 'right' }}>
           {phase === 'recording' && (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, justifyContent: 'flex-end' }}>
-                <span className="recording-dot" />
-                {formatDuration(elapsed)}
-              </div>
               {totalQuestions > 1 && (
-                <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}>
                   질문 {questionIndex + 1}/{totalQuestions}
                 </p>
               )}
               {limitEnabled && remaining !== null && (
-                <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'var(--teal)', fontWeight: 600 }}>
+                <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--teal)', fontWeight: 600 }}>
                   남은 {formatDuration(remaining)}
                 </p>
               )}
@@ -350,6 +349,7 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
       </header>
 
       <div
+        className={`media-stage${phase === 'recording' ? ' media-stage--recording' : ''}`}
         style={{
           position: 'relative',
           borderRadius: 'var(--radius-lg)',
@@ -376,12 +376,80 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
           <AudioVisualizer stream={previewStream} active={phase === 'recording'} />
         )}
 
+        {phase === 'recording' && (
+          <div className="recording-indicator" aria-live="polite">
+            <span className="recording-indicator__dot" />
+            <span>{recordKind === 'video' ? '녹화 중' : '녹음 중'}</span>
+            <span className="recording-indicator__time">{formatDuration(elapsed)}</span>
+          </div>
+        )}
+
         {questionBanner && phase === 'recording' && (
           <div className="inline-question-banner">
-            <p className="flash-kicker" style={{ marginBottom: 12 }}>NEXT QUESTION</p>
-            <p className="flash-question" style={{ fontSize: 'clamp(1.6rem, 7vw, 2.2rem)' }}>
-              {questionBanner}
-            </p>
+            <QuestionDisplay
+              question={questionBanner}
+              questionIndex={questionIndex}
+              totalQuestions={totalQuestions}
+              kicker="NEXT QUESTION"
+              stable
+            />
+          </div>
+        )}
+
+        {phase === 'flash' && (
+          <div className="flash-overlay flash-overlay--media">
+            <QuestionDisplay
+              question={currentQuestion}
+              questionIndex={questionIndex}
+              totalQuestions={totalQuestions}
+            />
+          </div>
+        )}
+
+        {phase === 'countdown' && (
+          <div className="flash-overlay flash-overlay--media flash-overlay--phase">
+            <QuestionDisplay
+              question={currentQuestion}
+              questionIndex={questionIndex}
+              totalQuestions={totalQuestions}
+              stable
+            />
+            <div className="countdown-ring">
+              <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="60" cy="60" r="54" fill="none" stroke="var(--border)" strokeWidth="4" />
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="54"
+                  fill="none"
+                  stroke="var(--teal)"
+                  strokeWidth="4"
+                  strokeDasharray={339.292}
+                  strokeDashoffset={339.292 * (1 - countdown / settings.countdownSeconds)}
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dashoffset 0.3s' }}
+                />
+              </svg>
+              <span className="countdown-num">{countdown}</span>
+            </div>
+          </div>
+        )}
+
+        {phase === 'ready' && (
+          <div className="flash-overlay flash-overlay--media flash-overlay--phase">
+            <QuestionDisplay
+              question={currentQuestion}
+              questionIndex={questionIndex}
+              totalQuestions={totalQuestions}
+              stable
+            />
+            <button
+              type="button"
+              className="btn btn-primary phase-start-btn"
+              onClick={() => void handleStartAnswer()}
+            >
+              답변 시작
+            </button>
           </div>
         )}
 
@@ -447,61 +515,33 @@ export function PracticePage({ settings, context, onCancel, onComplete }: Props)
           <p className="reminder-toast__time">{reminderToast.timeLabel}</p>
         </div>
       )}
-
-      {phase === 'flash' && (
-        <div className="flash-overlay">
-          {totalQuestions > 1 && (
-            <p style={{ margin: '0 0 12px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              질문 1 / {totalQuestions}
-            </p>
-          )}
-          <p className="flash-kicker">QUESTION</p>
-          <p className="flash-question">{currentQuestion}</p>
-        </div>
-      )}
-
-      {phase === 'countdown' && (
-        <div className="flash-overlay">
-          <p className="flash-question" style={{ fontSize: 'clamp(1.6rem, 7vw, 2.2rem)', opacity: 0.7 }}>
-            {currentQuestion}
-          </p>
-          <div className="countdown-ring">
-            <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
-              <circle cx="60" cy="60" r="54" fill="none" stroke="var(--border)" strokeWidth="4" />
-              <circle
-                cx="60"
-                cy="60"
-                r="54"
-                fill="none"
-                stroke="var(--teal)"
-                strokeWidth="4"
-                strokeDasharray={339.292}
-                strokeDashoffset={339.292 * (1 - countdown / settings.countdownSeconds)}
-                strokeLinecap="round"
-                style={{ transition: 'stroke-dashoffset 0.3s' }}
-              />
-            </svg>
-            <span className="countdown-num">{countdown}</span>
-          </div>
-        </div>
-      )}
-
-      {phase === 'ready' && (
-        <div className="flash-overlay">
-          <p className="flash-question" style={{ fontSize: 'clamp(1.6rem, 7vw, 2.2rem)', marginBottom: 32, opacity: 0.85 }}>
-            {currentQuestion}
-          </p>
-          <button
-            type="button"
-            className="btn btn-primary"
-            style={{ padding: '18px 48px', fontSize: '1.1rem' }}
-            onClick={() => void handleStartAnswer()}
-          >
-            답변 시작
-          </button>
-        </div>
-      )}
     </div>
+  )
+}
+
+function QuestionDisplay({
+  question,
+  questionIndex,
+  totalQuestions,
+  kicker = 'QUESTION',
+  stable = false,
+}: {
+  question: string
+  questionIndex: number
+  totalQuestions: number
+  kicker?: string
+  stable?: boolean
+}) {
+  return (
+    <>
+      {totalQuestions > 1 && (
+        <p className="phase-question-meta">
+          질문 {questionIndex + 1} / {totalQuestions}
+        </p>
+      )}
+      <p className="flash-kicker">{kicker}</p>
+      <p className={`flash-question${stable ? ' flash-question--stable' : ''}`}>{question}</p>
+    </>
   )
 }
 
