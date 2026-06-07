@@ -16,11 +16,10 @@ export function formatDate(ts: number): string {
 }
 
 export function flashDurationForQuestion(
-  text: string,
+  _text: string,
   baseSeconds: number,
 ): number {
-  const extra = Math.min(4, Math.floor(text.length / 40))
-  return Math.max(3, Math.min(8, baseSeconds + extra))
+  return Math.min(3, Math.max(2, baseSeconds))
 }
 
 /** 녹화 중 다음 질문 배너 — 초기 플래시보다 더 길게 표시 */

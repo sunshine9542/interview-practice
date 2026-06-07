@@ -21,7 +21,7 @@ export const DEFAULT_QUICK_START: QuickStartConfig = {
 export const DEFAULT_SETTINGS: AppSettings = {
   startMode: 'manual',
   countdownSeconds: 3,
-  questionFlashSeconds: 4,
+  questionFlashSeconds: 3,
   soundType: 'ding',
   defaultRecordKind: 'video',
   theme: 'light',

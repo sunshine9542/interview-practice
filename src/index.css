@@ -1046,6 +1046,27 @@ input[type='range']:disabled::-webkit-slider-thumb {
   color: var(--text);
 }
 
+.audio-phase-panel {
+  margin-top: 14px;
+  padding: 20px 16px 24px;
+  border-radius: var(--radius-lg);
+  background: var(--overlay-bg);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.audio-phase-panel .flash-question {
+  font-size: clamp(1.35rem, 5.5vw, 1.9rem);
+  line-height: 1.5;
+}
+
+.audio-phase-panel .phase-start-btn {
+  width: 100%;
+  max-width: 280px;
+}
+
 .review-page__footer {
   position: fixed;
   left: 0;

@@ -397,7 +397,7 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
           </div>
         )}
 
-        {phase === 'flash' && (
+        {recordKind === 'video' && phase === 'flash' && (
           <div className="flash-overlay flash-overlay--media">
             <QuestionDisplay
               question={currentQuestion}
@@ -407,7 +407,7 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
           </div>
         )}
 
-        {phase === 'countdown' && (
+        {recordKind === 'video' && phase === 'countdown' && (
           <div className="flash-overlay flash-overlay--media flash-overlay--phase">
             <QuestionDisplay
               question={currentQuestion}
@@ -415,28 +415,11 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
               totalQuestions={totalQuestions}
               stable
             />
-            <div className="countdown-ring">
-              <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx="60" cy="60" r="54" fill="none" stroke="var(--border)" strokeWidth="4" />
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="54"
-                  fill="none"
-                  stroke="var(--teal)"
-                  strokeWidth="4"
-                  strokeDasharray={339.292}
-                  strokeDashoffset={339.292 * (1 - countdown / settings.countdownSeconds)}
-                  strokeLinecap="round"
-                  style={{ transition: 'stroke-dashoffset 0.3s' }}
-                />
-              </svg>
-              <span className="countdown-num">{countdown}</span>
-            </div>
+            <CountdownRing countdown={countdown} total={settings.countdownSeconds} />
           </div>
         )}
 
-        {phase === 'ready' && (
+        {recordKind === 'video' && phase === 'ready' && (
           <div className="flash-overlay flash-overlay--media flash-overlay--phase">
             <QuestionDisplay
               question={currentQuestion}
@@ -499,6 +482,29 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
         </div>
       )}
 
+      {recordKind === 'audio' && (phase === 'flash' || phase === 'ready' || phase === 'countdown') && (
+        <div className="audio-phase-panel">
+          <QuestionDisplay
+            question={currentQuestion}
+            questionIndex={questionIndex}
+            totalQuestions={totalQuestions}
+            stable={phase !== 'flash'}
+          />
+          {phase === 'countdown' && (
+            <CountdownRing countdown={countdown} total={settings.countdownSeconds} />
+          )}
+          {phase === 'ready' && (
+            <button
+              type="button"
+              className="btn btn-primary phase-start-btn"
+              onClick={() => void handleStartAnswer()}
+            >
+              답변 시작
+            </button>
+          )}
+        </div>
+      )}
+
       {phase === 'recording' && limitEnabled && (
         <div className="question-progress">
           <div className="question-progress__fill" style={{ width: `${progressPct}%` }} />
@@ -523,6 +529,29 @@ export function PracticePage({ settings, context, focusKeyword, onCancel, onComp
           <p className="reminder-toast__time">{reminderToast.timeLabel}</p>
         </div>
       )}
+    </div>
+  )
+}
+
+function CountdownRing({ countdown, total }: { countdown: number; total: number }) {
+  return (
+    <div className="countdown-ring">
+      <svg width="120" height="120" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="60" cy="60" r="54" fill="none" stroke="var(--border)" strokeWidth="4" />
+        <circle
+          cx="60"
+          cy="60"
+          r="54"
+          fill="none"
+          stroke="var(--teal)"
+          strokeWidth="4"
+          strokeDasharray={339.292}
+          strokeDashoffset={339.292 * (1 - countdown / total)}
+          strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 0.3s' }}
+        />
+      </svg>
+      <span className="countdown-num">{countdown}</span>
     </div>
   )
 }
